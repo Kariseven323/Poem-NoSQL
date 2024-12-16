@@ -34,7 +34,27 @@ public class UserService {
     }
 
     public User updateUser(User user) {
-        return userRepository.save(user);
+        // 检查用户是否存在
+        Optional<User> existingUser = userRepository.findById(user.getId());
+        if (existingUser.isPresent()) {
+            User updatedUser = existingUser.get();
+
+            // 更新用户的各个字段
+            if (user.getUsername() != null) updatedUser.setUsername(user.getUsername());
+            if (user.getPhone() != null) updatedUser.setPhone(user.getPhone());
+            if (user.getPassword() != null) {
+                // 加密存储密码
+                updatedUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+            if (user.getGender() != null) updatedUser.setGender(user.getGender());
+            if (user.getSignature() != null) updatedUser.setSignature(user.getSignature());
+
+            // 保存更新后的用户
+            return userRepository.save(updatedUser);
+        } else {
+            // 用户不存在时，抛出异常
+            throw new RuntimeException("User with ID " + user.getId() + " not found");
+        }
     }
 
     public void deleteUser(Long id) {
