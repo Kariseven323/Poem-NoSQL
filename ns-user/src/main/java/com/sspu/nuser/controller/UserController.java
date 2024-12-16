@@ -28,8 +28,10 @@ public class UserController {
         return userService.getUser(id);
     }
 
-    @PutMapping
-    public User updateUser(@RequestBody User user) {
+    @PutMapping("/update/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        // 设置用户的 ID 确保与路径参数一致
+        user.setId(id);
         return userService.updateUser(user);
     }
 
