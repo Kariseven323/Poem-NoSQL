@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>ns-register</module>
+        <module>ns-user</module>
     </modules>
 
     <properties>
