@@ -19,11 +19,11 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Optional<User> login(@RequestParam String username, @RequestParam String password) {
+    public Optional<User> login(@RequestParam("username") String username, @RequestParam("password") String password) {
         return userService.login(username, password);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/get/{id}")
     public Optional<User> getUser(@PathVariable Long id) {
         return userService.getUser(id);
     }
@@ -33,7 +33,7 @@ public class UserController {
         return userService.updateUser(user);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/del/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
