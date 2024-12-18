@@ -1,3 +1,14 @@
+/**
+ * @file UserService.java
+ * @description 用户服务实现类
+ * 功能：
+ * 1. 实现用户相关的业务逻辑
+ * 2. 处理用户注册和登录
+ * 3. 提供用户信息的增删改查
+ * 4. 实现密码加密和验证
+ * 5. 处理用户数据的业务规则
+ */
+
 package com.sspu.nuser.service;
 
 import com.sspu.nuser.entity.User;
@@ -39,7 +50,7 @@ public class UserService {
         if (existingUser.isPresent()) {
             User updatedUser = existingUser.get();
 
-            // 更新用户的各个字段
+            // 更新用户的��个字段
             if (user.getUsername() != null) updatedUser.setUsername(user.getUsername());
             if (user.getPhone() != null) updatedUser.setPhone(user.getPhone());
             if (user.getPassword() != null) {
