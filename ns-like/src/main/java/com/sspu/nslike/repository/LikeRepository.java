@@ -8,6 +8,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LikeRepository extends MongoRepository<Comment, String> {
-    List<Comment> findByPoemIdOrderByLikeCountDesc(String poemId); // 根据点赞数排序
+    List<Comment> findByPoemId(String poemId); // 根据点赞数排序
 }
-
