@@ -11,6 +11,7 @@
     <modules>
         <module>ns-register</module>
         <module>ns-user</module>
+        <module>ns-like</module>
     </modules>
 
     <properties>
