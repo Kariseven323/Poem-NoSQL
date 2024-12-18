@@ -1,3 +1,12 @@
+# @file application.yml
+# @description Eureka 服务器配置文件
+# 功能：
+# 1. 配置服务器端口
+# 2. 配置 Eureka 服务器属性
+# 3. 配置服务注册行为
+# 4. 配置应用名称
+# 5. 配置服务同步时间
+
 server:
   port: 8761  # Eureka 服务默认运行端口
 

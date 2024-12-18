@@ -1,3 +1,14 @@
+/**
+ * @file SecurityConfig.java
+ * @description Spring Security 安全配置类
+ * 功能：
+ * 1. 配置 Spring Security 安全框架
+ * 2. 提供密码加密器
+ * 3. 配置接口访问权限
+ * 4. 禁用 CSRF 保护
+ * 5. 配置认证规则
+ */
+
 package com.sspu.nuser.config;
 
 import org.springframework.context.annotation.Bean;

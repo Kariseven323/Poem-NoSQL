@@ -1,3 +1,15 @@
+/**
+ * @file UserController.java
+ * @description 用户控制器
+ * 功能：
+ * 1. 处理用户相关的HTTP请求
+ * 2. 提供用户注册接口
+ * 3. 提供用户登录接口
+ * 4. 提供用户信息查询接口
+ * 5. 提供用户信息更新接口
+ * 6. 提供用户删除接口
+ */
+
 package com.sspu.nuser.controller;
 
 import com.sspu.nuser.entity.User;

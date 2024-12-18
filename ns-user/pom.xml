@@ -55,23 +55,21 @@
             <version>3.4.0</version>
         </dependency>
 
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version> <!-- 使用最新的稳定版本 -->
+            <version>2.15.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.15.2</version> <!-- 确保和 jackson-databind 版本一致 -->
+            <version>2.15.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.15.2</version> <!-- 确保和其他 Jackson 版本一致 -->
+            <version>2.15.2</version>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -79,7 +77,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.8.1</version> <!-- 修改为稳定版本 -->
                 <configuration>
                     <source>23</source>
                     <target>23</target>
@@ -90,5 +88,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- 配置 Maven 镜像源，使用阿里云的 Maven 镜像 -->
+    <repositories>
+        <repository>
+            <id>aliyun-maven</id>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
 
 </project>

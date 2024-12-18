@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+@file pom.xml
+@description Maven 项目配置文件
+功能：
+1. 配置项目依赖管理
+2. 定义项目构建规则
+3. 配置项目基本信息
+4. 管理 Spring Cloud 组件版本
+5. 配置编译选项
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
