@@ -1,6 +1,7 @@
 package com.sspu.nslike.controller;
 
 import com.sspu.nslike.model.Comment;
+import com.sspu.nslike.model.PoemLike;
 import com.sspu.nslike.service.LikeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,13 @@ public class LikeController {
         return likeService.getCommentsByPoemId(poemId);
     }
 
-    @PostMapping("/comments/{commentId}/like")
-    public Comment likeComment(@PathVariable String commentId, @RequestParam String userId) {
-        return likeService.likeComment(commentId, userId);
+    @PostMapping("/comments/{commentId}/toggle-like")
+    public Comment toggleCommentLike(@PathVariable String commentId, @RequestParam String userId) {
+        return likeService.toggleCommentLike(commentId, userId);
     }
 
-    @PostMapping("/comments/{commentId}/unlike")
-    public Comment unlikeComment(@PathVariable String commentId, @RequestParam String userId) {
-        return likeService.unlikeComment(commentId, userId);
+    @PostMapping("/poems/{poemId}/toggle-like")
+    public PoemLike togglePoemLike(@PathVariable String poemId, @RequestParam String userId) {
+        return likeService.togglePoemLike(poemId, userId);
     }
 }
