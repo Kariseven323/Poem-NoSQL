@@ -25,12 +25,8 @@ public class LikeController {
     }
 
     @PostMapping("/comments/{commentId}/like")
-    public Comment likeComment(@PathVariable("commentId") String commentId, @RequestParam("userId") String userId) {
-        return likeService.likeComment(commentId, userId);
+    public Comment toggleLike(@PathVariable("commentId") String commentId, @RequestParam("userId") String userId) {
+        return likeService.toggleLike(commentId, userId);
     }
 
-    @PostMapping("/comments/{commentId}/unlike")
-    public Comment unlikeComment(@PathVariable("commentId") String commentId, @RequestParam("userId") String userId) {
-        return likeService.unlikeComment(commentId, userId);
-    }
 }
