@@ -1,25 +1,18 @@
 server:
-  port: 8082 # NsRank 服务运行的端口
+  port: 8082 # 启动服务的端口号，可以根据需求修改
 
 spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/poem # 替换为你的数据库名称
-    username: root # 替换为你的数据库用户名
-    password: cdj123 # 替换为你的数据库密码
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    jpa:
-      hibernate:
-        ddl-auto: update # 自动更新表结构（可根据需求更改为validate或none）
-      show-sql: true # 打印 SQL 语句
-      database-platform: org.hibernate.dialect.MySQLDialect
   application:
-    name: ns-rank # 服务名称
+    name: ns-rank # 应用名称
   data:
+    mongodb:
+      uri: mongodb://localhost:27017/poem # MongoDB连接配置
     redis:
+      database: 0
       host: localhost
       port: 6379
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/ # Eureka Server 地址
+  datasource:
+    url: jdbc:mysql://localhost:3306/poem?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: cdj123
+    driver-class-name: com.mysql.cj.jdbc.Driver
