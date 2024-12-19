@@ -7,12 +7,18 @@ import com.sspu.nslike.model.UserLike;
 import com.sspu.nslike.repository.LikeRepository;
 import com.sspu.nslike.repository.PoemLikeRepository;
 import com.sspu.nslike.repository.UserLikeRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class LikeService {
@@ -128,4 +134,59 @@ public class LikeService {
         return poemLikeRepository.save(poemLike);
     }
 
+
+    // MySQL 配置
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
+    private static final String MYSQL_USER = "root";
+    private static final String MYSQL_PASSWORD = "cdj123";
+
+    @PostConstruct
+    public void initializePoemLikes() {
+        try (Connection connection = DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD)) {
+            // Step 1: 从 MySQL 加载所有诗词 ID
+            List<String> poemIds = fetchAllPoemIds(connection);
+
+            // Step 2: 从 MongoDB 加载现有的诗词 ID
+            Set<String> existingPoemIds = poemLikeRepository.findAll()
+                    .stream()
+                    .map(PoemLike::getPoemId)
+                    .collect(Collectors.toSet());
+
+            // Step 3: 计算需要插入的诗词 ID
+            List<PoemLike> newPoemLikes = poemIds.stream()
+                    .filter(poemId -> !existingPoemIds.contains(poemId))
+                    .map(poemId -> {
+                        PoemLike poemLike = new PoemLike();
+                        poemLike.setPoemId(poemId);
+                        poemLike.setLikeCount(0);
+                        poemLike.setLikedUserIds(new HashSet<>());
+                        return poemLike;
+                    })
+                    .collect(Collectors.toList());
+
+            // Step 4: 批量插入 MongoDB
+            if (!newPoemLikes.isEmpty()) {
+                poemLikeRepository.saveAll(newPoemLikes);
+                System.out.println("新增诗词点赞集合: " + newPoemLikes.size());
+            } else {
+                System.out.println("所有诗词集合已存在，无需更新");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("初始化诗词点赞集合失败: " + e.getMessage());
+        }
+    }
+
+    private List<String> fetchAllPoemIds(Connection connection) throws Exception {
+        List<String> poemIds = new ArrayList<>();
+        String sql = "SELECT id FROM ancient_poetry"; // 假设诗词表名为 'poems'
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                poemIds.add(resultSet.getString("id"));
+            }
+        }
+        return poemIds;
+    }
 }
