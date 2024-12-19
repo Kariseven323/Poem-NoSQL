@@ -1,10 +1,9 @@
 package com.sspu.nsrank.service;
 
-import com.sspu.nslike.model.PoemLike;
-import com.sspu.nslike.repository.PoemLikeRepository;
+import com.sspu.nsrank.model.AncientPoetry;
+import com.sspu.nsrank.repository.PoemLikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
@@ -18,93 +17,64 @@ import java.util.stream.Collectors;
 public class RankService {
 
     @Autowired
-    private PoemLikeRepository poemLikeRepository;
+    private PoemLikeRepository poemLikeRepository; // MongoDB的诗词点赞数据仓库
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate; // Redis操作类
 
+    // MySQL配置
     private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
     private static final String MYSQL_USER = "root";
     private static final String MYSQL_PASSWORD = "cdj123";
 
-    /**
-     * 获取访问量前50的诗词
-     */
-    public List<PoemLike> getTopVisitedPoems() {
-        return poemLikeRepository.findAll()
-                .stream()
-                .sorted((p1, p2) -> Integer.compare(p2.getVisitCount(), p1.getVisitCount())) // 按访问量降序排序
-                .limit(50) // 限制返回50条
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 获取点赞量前50的诗词
-     */
-    public List<PoemLike> getTopLikedPoems() {
-        return poemLikeRepository.findAll()
-                .stream()
-                .sorted((p1, p2) -> Integer.compare(p2.getLikeCount(), p1.getLikeCount())) // 按点赞量降序排序
-                .limit(50) // 限制返回50条
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 从 Redis 获取访问量前50的诗词
-     */
-    public Object getCachedTopVisitedPoems() {
-        return redisTemplate.opsForValue().get("topVisited");
-    }
-
-    /**
-     * 从 Redis 获取点赞量前50的诗词
-     */
-    public Object getCachedTopLikedPoems() {
-        return redisTemplate.opsForValue().get("topLiked");
-    }
-
-    // 从 MySQL 查询诗词详细信息
-    public String fetchPoemDetailFromMySQL(String poemId) {
-        String detail = "";
+    // 核心功能：获取前50诗词信息并存入Redis
+    public void saveTopPoemsToRedis() {
         try (Connection connection = DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD)) {
-            String sql = "SELECT detail FROM ancient_poetry WHERE id = ?";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, poemId);
-                ResultSet resultSet = statement.executeQuery();
-                if (resultSet.next()) {
-                    detail = resultSet.getString("detail");
+            // 从MongoDB获取前50个poemId
+            List<String> topPoemIds = poemLikeRepository.findAll()
+                    .stream()
+                    .sorted((p1, p2) -> Integer.compare((p2.getLikeCount() + p2.getVisitCount()),
+                            (p1.getLikeCount() + p1.getVisitCount())))
+                    .limit(50)
+                    .map(poemLike -> poemLike.getPoemId())
+                    .collect(Collectors.toList());
+
+            // 根据poemId从MySQL获取完整古诗词信息
+            for (String poemId : topPoemIds) {
+                AncientPoetry poetry = fetchPoemFromMySQL(connection, poemId);
+                if (poetry != null) {
+                    // 将诗词信息写入Redis（使用Hash结构）
+                    redisTemplate.opsForHash().put("top_poems", poetry.getId(), poetry);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("保存诗词信息到Redis失败: " + e.getMessage());
         }
-        return detail;
     }
 
-    /**
-     * 将数据存入 Redis
-     */
-    public void updateRedisCache() {
-        List<PoemLike> topVisited = getTopVisitedPoems();
-        List<PoemLike> topLiked = getTopLikedPoems();
-
-        // 存储到 Redis 中
-        redisTemplate.opsForValue().set("topVisited", topVisited);
-        redisTemplate.opsForValue().set("topLiked", topLiked);
-
-        // 获取详细信息并存储
-        topVisited.forEach(poem -> {
-            String detail = fetchPoemDetailFromMySQL(poem.getPoemId());
-            redisTemplate.opsForHash().put("poemDetails", poem.getPoemId(), detail);
-        });
-        System.out.println("Redis 缓存已更新");
-    }
-
-    /**
-     * 定时任务，每5分钟更新 Redis 缓存
-     */
-    @Scheduled(fixedRate = 300000) // 每5分钟执行一次
-    public void scheduleCacheUpdate() {
-        updateRedisCache();
+    // 从MySQL获取诗词信息
+    private AncientPoetry fetchPoemFromMySQL(Connection connection, String poemId) throws Exception {
+        String sql = "SELECT * FROM ancient_poetry WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, poemId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    AncientPoetry poetry = new AncientPoetry();
+                    poetry.setId(resultSet.getString("id"));
+                    poetry.setTitle(resultSet.getString("title"));
+                    poetry.setDynasty(resultSet.getString("dynasty"));
+                    poetry.setWriter(resultSet.getString("writer"));
+                    poetry.setType(resultSet.getString("type"));
+                    poetry.setContent(resultSet.getString("content"));
+                    poetry.setRemark(resultSet.getString("remark"));
+                    poetry.setTranslation(resultSet.getString("translation"));
+                    poetry.setShangxi(resultSet.getString("shangxi"));
+                    poetry.setAudioUrl(resultSet.getString("audioUrl"));
+                    return poetry;
+                }
+            }
+        }
+        return null; // 如果没有找到返回null
     }
 }
