@@ -147,24 +147,33 @@ public class LikeService {
             List<String> poemIds = fetchAllPoemIds(connection);
 
             // Step 2: 从 MongoDB 加载现有的诗词 ID
-            Set<String> existingPoemIds = poemLikeRepository.findAll()
-                    .stream()
+            List<PoemLike> existingPoemLikes = poemLikeRepository.findAll();
+
+            // Step 3: 确保所有现有记录都有 visitCount 字段
+            for (PoemLike poemLike : existingPoemLikes) {
+                if (poemLike.getVisitCount() == 0) {
+                    poemLike.setVisitCount(0); // 确保字段存在
+                    poemLikeRepository.save(poemLike);
+                }
+            }
+
+            // Step 4: 插入新记录
+            Set<String> existingPoemIds = existingPoemLikes.stream()
                     .map(PoemLike::getPoemId)
                     .collect(Collectors.toSet());
 
-            // Step 3: 计算需要插入的诗词 ID
             List<PoemLike> newPoemLikes = poemIds.stream()
                     .filter(poemId -> !existingPoemIds.contains(poemId))
                     .map(poemId -> {
                         PoemLike poemLike = new PoemLike();
                         poemLike.setPoemId(poemId);
                         poemLike.setLikeCount(0);
+                        poemLike.setVisitCount(0); // 初始化访问量
                         poemLike.setLikedUserIds(new HashSet<>());
                         return poemLike;
                     })
                     .collect(Collectors.toList());
 
-            // Step 4: 批量插入 MongoDB
             if (!newPoemLikes.isEmpty()) {
                 poemLikeRepository.saveAll(newPoemLikes);
                 System.out.println("新增诗词点赞集合: " + newPoemLikes.size());
@@ -189,4 +198,14 @@ public class LikeService {
         }
         return poemIds;
     }
+
+    public PoemLike incrementVisitCount(String poemId) {
+        PoemLike poemLike = poemLikeRepository.findByPoemId(poemId)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "Poem not found"));
+
+        // 更新访问量
+        poemLike.setVisitCount(poemLike.getVisitCount() + 1);
+        return poemLikeRepository.save(poemLike);
+    }
+
 }

@@ -17,4 +17,5 @@ public class PoemLike {
     private String poemId; // 诗词ID
     private int likeCount; // 点赞数量
     private Set<String> likedUserIds = new HashSet<>(); // 保存点赞过该诗词的用户ID
+    private int visitCount = 0; // 访问量，默认值为0
 }
