@@ -34,4 +34,9 @@ public class LikeController {
     public PoemLike togglePoemLike(@PathVariable String poemId, @RequestParam String userId) {
         return likeService.togglePoemLike(poemId, userId);
     }
+
+    @PostMapping("/poems/{poemId}/increment-visit")
+    public PoemLike incrementVisitCount(@PathVariable String poemId) {
+        return likeService.incrementVisitCount(poemId);
+    }
 }
