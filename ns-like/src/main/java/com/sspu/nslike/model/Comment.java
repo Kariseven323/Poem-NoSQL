@@ -10,17 +10,51 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 评论实体类
+ * 用于存储诗词评论的相关信息
+ * @author [your name]
+ * @version 1.0
+ * @since [date]
+ */
 @Data
 @Document(collection = "comments")
 public class Comment {
+    /**
+     * 评论ID
+     */
     @Id
-    private String id; // 评论ID
-    private String poemId; // 对应诗词ID
-    private String parentId; // 父评论ID，如果是顶级评论则为 null
-    private String userId; // 评论用户ID
-    private String content; // 评论内容
-    private int likeCount; // 点赞数量
-    private LocalDateTime createdAt; // 创建时间
+    private String id;
+
+    /**
+     * 评论内容
+     */
+    private String content;
+
+    /**
+     * 评论者ID
+     */
+    private String userId;
+
+    /**
+     * 诗词ID
+     */
+    private String poemId;
+
+    /**
+     * 点赞数
+     */
+    private int likes;
+
+    /**
+     * 评论时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 父评论ID（用于回复）
+     */
+    private String parentId;
 
     // 保存点赞过该评论的用户ID
     private Set<String> likedUserIds = new HashSet<>();

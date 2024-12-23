@@ -1,13 +1,3 @@
-/**
- * @file router/index.js
- * @description 路由配置文件
- * 功能：
- * 1. 配置前端路由规则
- * 2. 定义页面跳转路径
- * 3. 配置路由懒加载
- * 4. 设置默认重定向
- */
-
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -24,6 +14,11 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: () => import('../views/Register.vue')
+  },
+  {
+    path: '/home',
+    name: 'Home',
+    component: () => import('../views/Home.vue')
   }
 ]
 
@@ -32,4 +27,4 @@ const router = createRouter({
   routes
 })
 
-export default router 
+export default router
