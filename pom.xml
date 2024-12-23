@@ -12,6 +12,7 @@
         <module>ns-register</module>
         <module>ns-user</module>
         <module>ns-like</module>
+        <module>ns-rank</module>
     </modules>
 
     <properties>
