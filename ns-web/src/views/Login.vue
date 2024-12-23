@@ -88,7 +88,7 @@ const rules = {
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
@@ -99,11 +99,11 @@ const handleLogin = async () => {
             password: loginForm.password
           }
         })
-        
+
         if (response) {
           ElMessage.success('登录成功')
           localStorage.setItem('user', JSON.stringify(response))
-          router.push('/')
+          router.push('/home')  // 登录成功后跳转到主页
         } else {
           ElMessage.error('用户名或密码错误')
         }
@@ -115,6 +115,7 @@ const handleLogin = async () => {
     }
   })
 }
+
 </script>
 
 <style scoped>
