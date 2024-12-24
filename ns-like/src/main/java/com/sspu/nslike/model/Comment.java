@@ -44,7 +44,7 @@ public class Comment {
     /**
      * 点赞数
      */
-    private int likes;
+    private int likeCount;
 
     /**
      * 评论时间
