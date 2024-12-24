@@ -1,6 +1,5 @@
 package com.sspu.nsrank.model;
 
-import com.google.common.collect.Table;
 import jakarta.persistence.*;
 import lombok.Data;
 
