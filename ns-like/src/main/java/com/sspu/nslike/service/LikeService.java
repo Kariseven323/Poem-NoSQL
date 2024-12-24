@@ -31,7 +31,7 @@ public class LikeService {
     private PoemLikeRepository poemLikeRepository;
 
     public Comment addComment(Comment comment) {
-        comment.setLikes(0);
+        comment.setLikeCount(0);
         comment.setCreateTime(LocalDateTime.now());
 
         // 如果是顶级评论
@@ -114,10 +114,10 @@ public class LikeService {
         // 切换点赞状态
         if (userLike.getLikedCommentIds().contains(commentId)) {
             userLike.getLikedCommentIds().remove(commentId);
-            comment.setLikes(comment.getLikes() - 1);
+            comment.setLikeCount(comment.getLikeCount() - 1);
         } else {
             userLike.getLikedCommentIds().add(commentId);
-            comment.setLikes(comment.getLikes() + 1);
+            comment.setLikeCount(comment.getLikeCount() + 1);
         }
 
         // 保存更新
