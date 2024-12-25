@@ -9,7 +9,6 @@ import com.sspu.nslike.repository.PoemLikeRepository;
 import com.sspu.nslike.repository.UserLikeRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
@@ -30,16 +29,25 @@ public class LikeService {
     @Autowired
     private PoemLikeRepository poemLikeRepository;
 
-    public Comment addComment(Comment comment) {
+    /**
+     * 为诗词添加评论
+     * @param comment 评论对象，必须包含诗词ID（poemId）
+     * @return 返回保存的评论
+     */
+    public Comment addCommentToPoem(Comment comment) {
+        if (comment.getPoemId() == null || comment.getPoemId().isEmpty()) {
+            throw new CustomException("诗词ID不能为空", 400);
+        }
+
         comment.setLikeCount(0);
         comment.setCreateTime(LocalDateTime.now());
 
         // 如果是顶级评论
-        if (comment.getParentId() == null) {
-            return likeRepository.save(comment); // 直接保存
+        if (comment.getParentId() == null || comment.getParentId().isEmpty()) {
+            return likeRepository.save(comment);
         }
 
-        // 如果是子评论
+        // 如果是子评论，查找父评论
         Comment parentComment = likeRepository.findById(comment.getParentId())
                 .orElseThrow(() -> new CustomException("父评论不存在", 404));
 
@@ -49,43 +57,34 @@ public class LikeService {
         // 保存父评论（级联保存子评论）
         likeRepository.save(parentComment);
 
-        return comment; // 返回子评论
+        return comment;
     }
 
-    private void addReplyToParent(Comment parent, Comment reply) {
-        // 如果该评论的 ID 与目标 parentId 匹配，则添加子评论
-        if (parent.getId().equals(reply.getParentId())) {
-            parent.getReplies().add(reply);
-        } else {
-            // 否则在父评论的子评论中继续递归寻找
-            for (Comment child : parent.getReplies()) {
-                addReplyToParent(child, reply);
-            }
-        }
-    }
-
-    public List<Comment> getCommentsByPoemId(String poemId) {
-        // 获取所有评论
+    /**
+     * 获取某首诗词的所有评论（按点赞量从大到小排序，包含嵌套结构）
+     * @param poemId 诗词ID
+     * @return 返回顶级评论及其嵌套子评论列表
+     */
+    public List<Comment> getCommentsForPoem(String poemId) {
+        // 获取诗词对应的所有评论
         List<Comment> allComments = likeRepository.findByPoemId(poemId);
 
-        // 构造顶级评论和嵌套评论
+        // 构造评论的顶级和嵌套结构
         Map<String, Comment> commentMap = new HashMap<>();
         List<Comment> topLevelComments = new ArrayList<>();
 
-        // 先将所有评论存入 Map，方便查找
         for (Comment comment : allComments) {
             commentMap.put(comment.getId(), comment);
 
-            // 如果没有父评论（即顶级评论），加入顶级评论列表
+            // 如果是顶级评论，加入顶级列表
             if (comment.getParentId() == null) {
                 topLevelComments.add(comment);
             }
         }
 
-        // 构建嵌套结构
+        // 构建嵌套评论结构
         for (Comment comment : allComments) {
             if (comment.getParentId() != null) {
-                // 找到父评论并添加到其 replies 列表中
                 Comment parentComment = commentMap.get(comment.getParentId());
                 if (parentComment != null) {
                     parentComment.getReplies().add(comment);
@@ -93,9 +92,31 @@ public class LikeService {
             }
         }
 
-        return topLevelComments; // 返回顶级评论及其嵌套
+        // 对顶级评论和嵌套子评论按点赞数排序
+        topLevelComments.sort((c1, c2) -> Integer.compare(c2.getLikeCount(), c1.getLikeCount()));
+        for (Comment topComment : topLevelComments) {
+            sortRepliesByLikeCount(topComment);
+        }
+
+        return topLevelComments;
     }
 
+    // 辅助方法：递归对子评论进行排序
+    private void sortRepliesByLikeCount(Comment comment) {
+        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
+            comment.getReplies().sort((c1, c2) -> Integer.compare(c2.getLikeCount(), c1.getLikeCount()));
+            for (Comment reply : comment.getReplies()) {
+                sortRepliesByLikeCount(reply); // 递归排序
+            }
+        }
+    }
+
+    /**
+     * 切换评论的点赞状态
+     * @param commentId 评论ID
+     * @param userId 用户ID
+     * @return 返回更新后的评论
+     */
     public Comment toggleCommentLike(String commentId, String userId) {
         // 获取评论
         Comment comment = likeRepository.findById(commentId)
@@ -125,6 +146,12 @@ public class LikeService {
         return likeRepository.save(comment);
     }
 
+    /**
+     * 切换诗词的点赞状态
+     * @param poemId 诗词ID
+     * @param userId 用户ID
+     * @return 返回更新后的诗词点赞记录
+     */
     public PoemLike togglePoemLike(String poemId, String userId) {
         // 获取诗词点赞记录
         PoemLike poemLike = poemLikeRepository.findByPoemId(poemId)
@@ -163,30 +190,18 @@ public class LikeService {
         return poemLikeRepository.save(poemLike);
     }
 
-
-    // MySQL 配置
-    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
-    private static final String MYSQL_USER = "root";
-    private static final String MYSQL_PASSWORD = "cdj123";
-
+    /**
+     * 初始化诗词的点赞数据
+     */
     @PostConstruct
     public void initializePoemLikes() {
         try (Connection connection = DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD)) {
-            // Step 1: 从 MySQL 加载所有诗词 ID
+            // 从 MySQL 加载所有诗词 ID
             List<String> poemIds = fetchAllPoemIds(connection);
 
-            // Step 2: 从 MongoDB 加载现有的诗词 ID
+            // 从 MongoDB 加载现有的诗词点赞记录
             List<PoemLike> existingPoemLikes = poemLikeRepository.findAll();
 
-            // Step 3: 确保所有现有记录都有 visitCount 字段
-            for (PoemLike poemLike : existingPoemLikes) {
-                if (poemLike.getVisitCount() == 0) {
-                    poemLike.setVisitCount(0); // 确保字段存在
-                    poemLikeRepository.save(poemLike);
-                }
-            }
-
-            // Step 4: 插入新记录
             Set<String> existingPoemIds = existingPoemLikes.stream()
                     .map(PoemLike::getPoemId)
                     .collect(Collectors.toSet());
@@ -197,7 +212,7 @@ public class LikeService {
                         PoemLike poemLike = new PoemLike();
                         poemLike.setPoemId(poemId);
                         poemLike.setLikeCount(0);
-                        poemLike.setVisitCount(0); // 初始化访问量
+                        poemLike.setVisitCount(0);
                         poemLike.setLikedUserIds(new HashSet<>());
                         return poemLike;
                     })
@@ -205,20 +220,15 @@ public class LikeService {
 
             if (!newPoemLikes.isEmpty()) {
                 poemLikeRepository.saveAll(newPoemLikes);
-                System.out.println("新增诗词点赞集合: " + newPoemLikes.size());
-            } else {
-                System.out.println("所有诗词集合已存在，无需更新");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("初始化诗词点赞集合失败: " + e.getMessage());
         }
     }
 
     private List<String> fetchAllPoemIds(Connection connection) throws Exception {
         List<String> poemIds = new ArrayList<>();
-        String sql = "SELECT id FROM ancient_poetry"; // 假设诗词表名为 'poems'
+        String sql = "SELECT id FROM ancient_poetry";
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
@@ -228,11 +238,14 @@ public class LikeService {
         return poemIds;
     }
 
+    /**
+     * 增加诗词访问量
+     * @param poemId 诗词ID
+     * @return 返回更新后的诗词点赞记录
+     */
     public PoemLike incrementVisitCount(String poemId) {
         PoemLike poemLike = poemLikeRepository.findByPoemId(poemId)
                 .orElseThrow(() -> new CustomException("诗词不存在", 404));
-
-        // 更新访问量
         poemLike.setVisitCount(poemLike.getVisitCount() + 1);
         return poemLikeRepository.save(poemLike);
     }
@@ -248,4 +261,8 @@ public class LikeService {
                 .orElse(0);
     }
 
+    // MySQL 配置
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
+    private static final String MYSQL_USER = "root";
+    private static final String MYSQL_PASSWORD = "cdj123";
 }
