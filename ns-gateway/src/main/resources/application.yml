@@ -1,0 +1,37 @@
+server:
+  port: 8081 # 网关服务端口号
+
+spring:
+  application:
+    name: ns-gateway # 网关服务名
+  cloud:
+    gateway:
+      routes:
+        # 路由到 ns-rank 服务
+        - id: ns-rank
+          uri: lb://ns-rank
+          predicates:
+            - Path=/rank/**
+
+        # 路由到 ns-like 服务
+        - id: ns-like
+          uri: lb://ns-like
+          predicates:
+            - Path=/api/likes/**, /api/comments/**
+
+        # 路由到 ns-user 服务
+        - id: ns-user
+          uri: lb://ns-user
+          predicates:
+            - Path=/users/**
+
+    discovery:
+      locator:
+        enabled: true # 开启服务发现
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8080/eureka/ # Eureka 服务注册地址
+  instance:
+    prefer-ip-address: true
