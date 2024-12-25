@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 点赞数据访问接口
@@ -24,10 +23,16 @@ public interface LikeRepository extends MongoRepository<Comment, String> {
     List<Comment> findByPoemId(String poemId);
 
     /**
-     * 根据用户ID和评论ID查找评论
-     * @param userId 用户ID
-     * @param commentId 评论ID
-     * @return 返回评论
+     * 根据诗词ID和父评论ID为空的评论列表
+     * @param poemId 诗词ID
+     * @return 返回评论列表
      */
-    Optional<Comment> findByUserIdAndId(String userId, String commentId);
+    List<Comment> findByPoemIdAndParentIdIsNull(String poemId);
+
+    /**
+     * 判断诗词ID和父评论ID为空的评论是否存在
+     * @param poemId 诗词ID
+     * @return 返回是否存在
+     */
+    boolean existsByPoemIdAndParentIdIsNull(String poemId);
 }

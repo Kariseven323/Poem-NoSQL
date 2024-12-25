@@ -44,7 +44,7 @@ public class Comment {
     /**
      * 点赞数
      */
-    private int likeCount;
+    private int likeCount = 0;
 
     /**
      * 评论时间
@@ -61,4 +61,23 @@ public class Comment {
 
     // 子评论列表
     private List<Comment> replies = new ArrayList<>();
+
+    public void addLike(String userId) {
+        if (likedUserIds == null) {
+            likedUserIds = new HashSet<>();
+        }
+        if (likedUserIds.add(userId)) {
+            likeCount++;
+        }
+    }
+
+    public void removeLike(String userId) {
+        if (likedUserIds != null && likedUserIds.remove(userId)) {
+            likeCount = Math.max(0, likeCount - 1);
+        }
+    }
+
+    public boolean hasLiked(String userId) {
+        return likedUserIds != null && likedUserIds.contains(userId);
+    }
 }

@@ -31,25 +31,43 @@ public class LikeService {
     private PoemLikeRepository poemLikeRepository;
 
     public Comment addComment(Comment comment) {
-        comment.setLikeCount(0);
-        comment.setCreateTime(LocalDateTime.now());
-
-        // 如果是顶级评论
-        if (comment.getParentId() == null) {
-            return likeRepository.save(comment); // 直接保存
+        if (comment.getPoemId() == null || comment.getPoemId().trim().isEmpty()) {
+            throw new CustomException("诗词ID不能为空", 400);
+        }
+        if (comment.getUserId() == null || comment.getUserId().trim().isEmpty()) {
+            throw new CustomException("用户ID不能为空", 400);
+        }
+        if (comment.getContent() == null || comment.getContent().trim().isEmpty()) {
+            throw new CustomException("评论内容不能为空", 400);
         }
 
-        // 如果是子评论
-        Comment parentComment = likeRepository.findById(comment.getParentId())
-                .orElseThrow(() -> new CustomException("父评论不存在", 404));
+        try {
+            comment.setLikeCount(0);
+            comment.setCreateTime(LocalDateTime.now());
+            comment.setLikedUserIds(new HashSet<>());
+            comment.setReplies(new ArrayList<>());
 
-        // 将子评论添加到父评论的 replies 列表
-        parentComment.getReplies().add(comment);
+            // 如果是顶级评论
+            if (comment.getParentId() == null) {
+                return likeRepository.save(comment);
+            }
 
-        // 保存父评论（级联保存子评论）
-        likeRepository.save(parentComment);
+            // 如果是子评论，查找父评论
+            Comment parentComment = likeRepository.findById(comment.getParentId())
+                    .orElseThrow(() -> new CustomException("父评论不存在", 404));
 
-        return comment; // 返回子评论
+            // 将子评论添加到父评论的replies列表
+            if (parentComment.getReplies() == null) {
+                parentComment.setReplies(new ArrayList<>());
+            }
+            parentComment.getReplies().add(comment);
+
+            // 保存父评论
+            likeRepository.save(parentComment);
+            return comment;
+        } catch (Exception e) {
+            throw new CustomException("添加评论失败: " + e.getMessage(), 500);
+        }
     }
 
     private void addReplyToParent(Comment parent, Comment reply) {
@@ -65,35 +83,51 @@ public class LikeService {
     }
 
     public List<Comment> getCommentsByPoemId(String poemId) {
-        // 获取所有评论
-        List<Comment> allComments = likeRepository.findByPoemId(poemId);
-
-        // 构造顶级评论和嵌套评论
-        Map<String, Comment> commentMap = new HashMap<>();
-        List<Comment> topLevelComments = new ArrayList<>();
-
-        // 先将所有评论存入 Map，方便查找
-        for (Comment comment : allComments) {
-            commentMap.put(comment.getId(), comment);
-
-            // 如果没有父评论（即顶级评论），加入顶级评论列表
-            if (comment.getParentId() == null) {
-                topLevelComments.add(comment);
-            }
+        if (poemId == null || poemId.trim().isEmpty()) {
+            throw new CustomException("诗词ID不能为空", 400);
         }
 
-        // 构建嵌套结构
-        for (Comment comment : allComments) {
-            if (comment.getParentId() != null) {
-                // 找到父评论并添加到其 replies 列表中
-                Comment parentComment = commentMap.get(comment.getParentId());
-                if (parentComment != null) {
-                    parentComment.getReplies().add(comment);
+        try {
+            // 获取所有评论
+            List<Comment> allComments = likeRepository.findByPoemId(poemId);
+            
+            // 如果没有评论，返回空列表
+            if (allComments == null || allComments.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            // 构建评论树
+            Map<String, Comment> commentMap = new HashMap<>();
+            List<Comment> topLevelComments = new ArrayList<>();
+
+            // 将所有评论放入map
+            for (Comment comment : allComments) {
+                commentMap.put(comment.getId(), comment);
+                if (comment.getReplies() == null) {
+                    comment.setReplies(new ArrayList<>());
+                }
+                if (comment.getParentId() == null) {
+                    topLevelComments.add(comment);
                 }
             }
-        }
 
-        return topLevelComments; // 返回顶级评论及其嵌套
+            // 构建评论树
+            for (Comment comment : allComments) {
+                if (comment.getParentId() != null) {
+                    Comment parent = commentMap.get(comment.getParentId());
+                    if (parent != null) {
+                        if (parent.getReplies() == null) {
+                            parent.setReplies(new ArrayList<>());
+                        }
+                        parent.getReplies().add(comment);
+                    }
+                }
+            }
+
+            return topLevelComments;
+        } catch (Exception e) {
+            throw new CustomException("获取评论失败: " + e.getMessage(), 500);
+        }
     }
 
     public Comment toggleCommentLike(String commentId, String userId) {
@@ -126,48 +160,59 @@ public class LikeService {
     }
 
     public PoemLike togglePoemLike(String poemId, String userId) {
-        // 获取诗词点赞记录
-        PoemLike poemLike = poemLikeRepository.findByPoemId(poemId)
-                .orElseGet(() -> {
-                    PoemLike newPoemLike = new PoemLike();
-                    newPoemLike.setPoemId(poemId);
-                    newPoemLike.setLikeCount(0);
-                    newPoemLike.setVisitCount(0);
-                    newPoemLike.setLikedUserIds(new HashSet<>());
-                    return newPoemLike;
-                });
-
-        // 获取用户的点赞记录
-        UserLike userLike = userLikeRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserLike newUserLike = new UserLike();
-                    newUserLike.setUserId(userId);
-                    newUserLike.setLikedPoemIds(new HashSet<>());
-                    newUserLike.setLikedCommentIds(new HashSet<>());
-                    return newUserLike;
-                });
-
-        // 切换点赞状态
-        if (userLike.getLikedPoemIds().contains(poemId)) {
-            userLike.getLikedPoemIds().remove(poemId);
-            poemLike.setLikeCount(poemLike.getLikeCount() - 1);
-            poemLike.getLikedUserIds().remove(userId);
-        } else {
-            userLike.getLikedPoemIds().add(poemId);
-            poemLike.setLikeCount(poemLike.getLikeCount() + 1);
-            poemLike.getLikedUserIds().add(userId);
+        if (poemId == null || poemId.trim().isEmpty()) {
+            throw new CustomException("诗词ID不能为空", 400);
+        }
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new CustomException("用户ID不能为空", 400);
         }
 
-        // 保存更新
-        userLikeRepository.save(userLike);
-        return poemLikeRepository.save(poemLike);
+        try {
+            // 获取诗词的点赞记录
+            PoemLike poemLike = poemLikeRepository.findByPoemId(poemId)
+                    .orElseGet(() -> {
+                        PoemLike newPoemLike = new PoemLike();
+                        newPoemLike.setPoemId(poemId);
+                        newPoemLike.setLikeCount(0);
+                        newPoemLike.setVisitCount(0);
+                        newPoemLike.setLikedUserIds(new HashSet<>());
+                        return newPoemLike;
+                    });
+
+            // 获取用户的点赞记录
+            UserLike userLike = userLikeRepository.findByUserId(userId)
+                    .orElseGet(() -> {
+                        UserLike newUserLike = new UserLike();
+                        newUserLike.setUserId(userId);
+                        newUserLike.setLikedPoemIds(new HashSet<>());
+                        newUserLike.setLikedCommentIds(new HashSet<>());
+                        return newUserLike;
+                    });
+
+            // 切换点赞状态
+            if (poemLike.getLikedUserIds().contains(userId)) {
+                poemLike.getLikedUserIds().remove(userId);
+                poemLike.setLikeCount(Math.max(0, poemLike.getLikeCount() - 1));
+                userLike.getLikedPoemIds().remove(poemId);
+            } else {
+                poemLike.getLikedUserIds().add(userId);
+                poemLike.setLikeCount(poemLike.getLikeCount() + 1);
+                userLike.getLikedPoemIds().add(poemId);
+            }
+
+            // 保存更新
+            userLikeRepository.save(userLike);
+            return poemLikeRepository.save(poemLike);
+        } catch (Exception e) {
+            throw new CustomException("切换点赞状态失败: " + e.getMessage(), 500);
+        }
     }
 
 
     // MySQL 配置
     private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
     private static final String MYSQL_USER = "root";
-    private static final String MYSQL_PASSWORD = "cdj123";
+    private static final String MYSQL_PASSWORD = "zsh123";
 
     @PostConstruct
     public void initializePoemLikes() {

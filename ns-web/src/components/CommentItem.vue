@@ -221,7 +221,7 @@ export default {
 }
 
 .comment-item {
-  background-color: #fff;
+  background: none;
   position: relative;
 }
 
@@ -230,8 +230,9 @@ export default {
   gap: 30px;
   justify-content: center;
   padding: 10px 0;
-  border-top: 1px dashed #eee;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
   position: relative;
+  background: none;
 }
 
 .like-text, .comment-text {
@@ -251,7 +252,7 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   width: 600px;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
