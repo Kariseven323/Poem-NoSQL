@@ -8,7 +8,7 @@
 # 5. 配置服务同步时间
 
 server:
-  port: 8761  # Eureka 服务默认运行端口
+  port: 8080  # Eureka 服务默认运行端口
 
 eureka:
   client:

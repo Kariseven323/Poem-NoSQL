@@ -1,19 +1,30 @@
-server:
-  port: 8081
-
 spring:
-  application:
-    name: ns-like # 服务的名称，Eureka 中注册的服务名
   datasource:
-    # 如果有数据库配置，保留数据源相关配置
     url: jdbc:mysql://localhost:3306/poem
     username: root
     password: cdj123
+    driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     mongodb:
-      uri: mongodb://localhost:27017/poem # MongoDB 配置
+      uri: mongodb://localhost:27017/poem
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  application:
+    name: ns-like
+
+server:
+  port: 8083
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+     defaultZone: http://localhost:8080/eureka/
+
+logging:
+  level:
+    root: INFO
+    org.springframework.data.mongodb: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.netflix.discovery: DEBUG

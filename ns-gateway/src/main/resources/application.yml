@@ -1,5 +1,5 @@
 server:
-  port: 8083 # 网关服务端口号
+  port: 8081 # 网关服务端口号
 
 spring:
   application:
@@ -32,6 +32,6 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/ # Eureka 服务注册地址
+      defaultZone: http://localhost:8080/eureka/ # Eureka 服务注册地址
   instance:
     prefer-ip-address: true
