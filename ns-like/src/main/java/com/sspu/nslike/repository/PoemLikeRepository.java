@@ -3,6 +3,8 @@ package com.sspu.nslike.repository;
 import com.sspu.nslike.model.PoemLike;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,4 +22,10 @@ public interface PoemLikeRepository extends MongoRepository<PoemLike, String> {
      * @return 返回诗词点赞记录
      */
     Optional<PoemLike> findByPoemId(String poemId);
+    
+    List<PoemLike> findAllByOrderByHotScoreDesc();
+    
+    List<PoemLike> findAllByOrderByLikeCountDesc();
+    
+    List<PoemLike> findAllByOrderByVisitCountDesc();
 }

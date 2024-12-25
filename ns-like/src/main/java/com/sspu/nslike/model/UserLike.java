@@ -3,6 +3,8 @@ package com.sspu.nslike.model;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -19,17 +21,22 @@ public class UserLike {
      * 用户ID
      */
     @Id
+    private String id;
+
+    /**
+     * 用户ID
+     */
     private String userId;
 
     /**
      * 已点赞的诗词ID集合
      */
-    private Set<String> likedPoemIds;
+    private Set<String> likedPoemIds = new HashSet<>();
 
     /**
      * 已点赞的评论ID集合
      */
-    private Set<String> likedCommentIds;
+    private Set<String> likedCommentIds = new HashSet<>();
 
     // Getters and setters
 }

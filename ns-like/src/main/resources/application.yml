@@ -8,7 +8,7 @@ spring:
     # 如果有数据库配置，保留数据源相关配置
     url: jdbc:mysql://localhost:3306/poem
     username: root
-    password: cdj123
+    password: zsh123
   data:
     mongodb:
       uri: mongodb://localhost:27017/poem # MongoDB 配置
@@ -17,3 +17,8 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    com.sspu.nslike: DEBUG
+    org.springframework.web: DEBUG

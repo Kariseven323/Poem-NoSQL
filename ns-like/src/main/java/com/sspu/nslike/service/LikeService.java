@@ -7,27 +7,26 @@ import com.sspu.nslike.model.UserLike;
 import com.sspu.nslike.repository.LikeRepository;
 import com.sspu.nslike.repository.PoemLikeRepository;
 import com.sspu.nslike.repository.UserLikeRepository;
-import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class LikeService {
 
     @Autowired
     private LikeRepository likeRepository;
+
     @Autowired
     private UserLikeRepository userLikeRepository;
+
     @Autowired
     private PoemLikeRepository poemLikeRepository;
+
 
     /**
      * 为诗词添加评论
@@ -183,12 +182,21 @@ public class LikeService {
             userLike.getLikedPoemIds().add(poemId);
             poemLike.setLikeCount(poemLike.getLikeCount() + 1);
             poemLike.getLikedUserIds().add(userId);
+
         }
 
-        // 保存更新
-        userLikeRepository.save(userLike);
-        return poemLikeRepository.save(poemLike);
+        try {
+            comment.setLikeCount(0);
+            comment.setCreateTime(LocalDateTime.now());
+            comment.setLikedUserIds(new HashSet<>());
+            comment.setReplies(new ArrayList<>());
+            return likeRepository.save(comment);
+        } catch (Exception e) {
+            log.error("添加评论失败: {}", e.getMessage());
+            throw new CustomException("添加评论失败: " + e.getMessage(), 500);
+        }
     }
+
 
     /**
      * 初始化诗词的点赞数据
@@ -255,11 +263,13 @@ public class LikeService {
      * @param poemId 诗词ID
      * @return 返回点赞数量
      */
+
     public int getPoemLikeCount(String poemId) {
         return poemLikeRepository.findByPoemId(poemId)
                 .map(PoemLike::getLikeCount)
                 .orElse(0);
     }
+
 
     // MySQL 配置
     private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/poem";
