@@ -13,6 +13,7 @@
         <module>ns-user</module>
         <module>ns-like</module>
         <module>ns-rank</module>
+        <module>ns-gateway</module>
     </modules>
 
     <properties>

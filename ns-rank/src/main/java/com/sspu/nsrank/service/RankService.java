@@ -5,6 +5,7 @@ import com.sspu.nsrank.repository.PoemLikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import com.sspu.nslike.model.PoemLike;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,12 +32,10 @@ public class RankService {
     public void saveTopPoemsToRedis() {
         try (Connection connection = DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD)) {
             // 从MongoDB获取前50个poemId
-            List<String> topPoemIds = poemLikeRepository.findAll()
+            // Step 1: 从 MongoDB 获取前 50 个 poemId，使用自定义查询代替 findAll
+            List<String> topPoemIds = poemLikeRepository.findTop50ByOrderByLikeCountAndVisitCount()
                     .stream()
-                    .sorted((p1, p2) -> Integer.compare((p2.getLikeCount() + p2.getVisitCount()),
-                            (p1.getLikeCount() + p1.getVisitCount())))
-                    .limit(50)
-                    .map(poemLike -> poemLike.getPoemId())
+                    .map(PoemLike::getPoemId)
                     .collect(Collectors.toList());
 
             // 根据poemId从MySQL获取完整古诗词信息

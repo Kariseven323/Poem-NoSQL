@@ -14,7 +14,7 @@ import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const service = axios.create({
-  baseURL: 'http://localhost:8080', // api的base_url
+  baseURL: 'http://localhost:8083', // api的base_url
   timeout: 15000, // 请求超时时间
   withCredentials: true // 允许携带cookie
 })
