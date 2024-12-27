@@ -17,13 +17,19 @@ spring:
         - id: ns-like
           uri: lb://ns-like
           predicates:
-            - Path=/api/likes/**, /api/comments/**
+            - Path=/api/likes/**
 
         # 路由到 ns-user 服务
         - id: ns-user
           uri: lb://ns-user
           predicates:
             - Path=/users/**
+
+        # 路由到 ns-comment 服务
+        - id: ns-comment
+          uri: lb://ns-comment
+          predicates:
+            - Path=/api/comments/**
 
     discovery:
       locator:

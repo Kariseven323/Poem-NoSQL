@@ -13,6 +13,7 @@
         <module>ns-user</module>
         <module>ns-gateway</module>
         <module>ns-like</module>
+        <module>ns-comment</module>
     </modules>
 
     <properties>
