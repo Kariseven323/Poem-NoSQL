@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -22,9 +20,7 @@ public class RecommendController {
     @Autowired
     private UserBehaviorService userBehaviorService;
 
-    // 定义 Logger
-    private static final Logger log = LoggerFactory.getLogger(RecommendController.class);
-    // 记录用户阅读行为，基于 poemId
+    // 记录用户行为
     @PostMapping("/{userId}/record")
     public ResponseEntity<?> recordBehavior(
             @PathVariable("userId") String userId,
@@ -32,17 +28,20 @@ public class RecommendController {
         try {
             userBehaviorService.recordBehavior(userId, poemId);
             return ResponseEntity.ok("行为记录成功");
-        } catch (IllegalArgumentException e) {
-            log.error("记录行为失败：参数错误，poemId={} userId={}", poemId, userId, e);
-            return ResponseEntity.badRequest().body("记录失败：" + e.getMessage());
         } catch (Exception e) {
-            log.error("记录行为失败：内部错误，poemId={} userId={}", poemId, userId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误：" + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("记录失败：" + e.getMessage());
         }
     }
 
+    // 获取基于用户行为的推荐
     @GetMapping("/{userId}")
     public ResponseEntity<List<AncientPoetry>> getRecommendations(@PathVariable("userId") String userId) {
         return ResponseEntity.ok(recommendService.recommendPoems(userId));
+    }
+
+    // 获取基于协同过滤的推荐
+    @GetMapping("/{userId}/collaborative")
+    public ResponseEntity<List<AncientPoetry>> getCollaborativeRecommendations(@PathVariable("userId") String userId) {
+        return ResponseEntity.ok(recommendService.collaborativeFilteringRecommend(userId));
     }
 }
