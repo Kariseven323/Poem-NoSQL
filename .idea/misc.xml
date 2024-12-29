@@ -6,6 +6,7 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/ns-like/pom.xml" />
+        <option value="$PROJECT_DIR$/ns-recommend/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

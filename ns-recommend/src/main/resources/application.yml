@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ns-recommend
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/poem
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/poem
+    username: root
+    password: cdj123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+server:
+  port: 8085
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8080/eureka/

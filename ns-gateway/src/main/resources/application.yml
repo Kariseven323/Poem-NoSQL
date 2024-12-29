@@ -31,6 +31,12 @@ spring:
           predicates:
             - Path=/api/comments/**
 
+        # 路由到 ns-recommend 服务
+        - id: ns-recommend
+          uri: lb://ns-recommend
+          predicates:
+            - Path=/api/recommend/**
+
     discovery:
       locator:
         enabled: true # 开启服务发现
