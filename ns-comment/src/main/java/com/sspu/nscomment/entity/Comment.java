@@ -12,25 +12,33 @@ import java.util.List;
 @Data
 public class Comment {
     @Id
-    private String id;
+    private String id; // 唯一标识
     @Field("poemId")
-    private String poemId;
+    private String poemId; // 所属诗词ID
     @Field("comments")
-    private List<CommentNode> comments = new ArrayList<>();
+    private List<CommentNode> comments = new ArrayList<>(); // 一级评论列表
 
-    // 查找父评论并添加嵌套评论
+    // 递归查找父评论并添加嵌套回复
     public boolean findAndAddReply(String parentId, CommentNode reply) {
         for (CommentNode commentNode : comments) {
-            System.out.println("正在检查评论节点ID：" + commentNode.getId());
             if (commentNode.getId().equals(parentId)) {
-                System.out.println("找到父评论ID：" + parentId + "，添加回复：" + reply);
                 commentNode.getReplies().add(reply);
                 return true;
             }
-            boolean found = commentNode.findAndAddReply(parentId, reply);
-            if (found) return true; // 递归中找到后直接返回
+            if (commentNode.toggleLike(parentId, true)) {
+                return true;
+            }
         }
-        return false; // 未找到父评论
+        return false;
     }
 
+    // 递归查找并对评论节点进行点赞或取消点赞
+    public boolean findAndToggleLike(String targetId, boolean isLike) {
+        for (CommentNode commentNode : comments) {
+            if (commentNode.toggleLike(targetId, isLike)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

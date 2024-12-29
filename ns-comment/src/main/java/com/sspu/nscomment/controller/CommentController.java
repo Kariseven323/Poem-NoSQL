@@ -1,10 +1,12 @@
 package com.sspu.nscomment.controller;
 
-import com.sspu.nscomment.entity.Comment;
+import com.sspu.nscomment.entity.CommentNode;
 import com.sspu.nscomment.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -12,17 +14,6 @@ public class CommentController {
 
     @Autowired
     private CommentService commentService;
-
-    // 初始化数据
-    @PostMapping("/initialize")
-    public ResponseEntity<String> initializeComments() {
-        try {
-            commentService.initializeComments();
-            return ResponseEntity.ok("评论数据初始化成功！");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("初始化失败：" + e.getMessage());
-        }
-    }
 
     // 添加评论
     @PostMapping("/{poemId}/add")
@@ -32,33 +23,35 @@ public class CommentController {
             @RequestParam("content") String content,
             @RequestParam(value = "parentId", required = false) String parentId) {
         try {
-            System.out.println("收到添加评论请求，poemId=" + poemId + ", userId=" + userId + ", parentId=" + parentId);
-            Comment comment = commentService.addComment(poemId, userId, content, parentId);
-            return ResponseEntity.ok(comment);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(400).body("请求失败：" + e.getMessage());
+            commentService.addComment(poemId, userId, content, parentId);
+            return ResponseEntity.ok("评论添加成功！");
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("服务器内部错误：" + e.getMessage());
+            return ResponseEntity.status(500).body(e.getMessage());
         }
     }
 
-    // 获取评论
-    @GetMapping("/{poemId}")
-    public ResponseEntity<?> getComments(@PathVariable("poemId") String poemId) {
+    // 点赞或取消点赞
+    @PostMapping("/{poemId}/like")
+    public ResponseEntity<?> toggleLike(
+            @PathVariable("poemId") String poemId,
+            @RequestParam("commentId") String commentId,
+            @RequestParam("isLike") boolean isLike) {
         try {
-            System.out.println("收到获取评论请求，poemId=" + poemId);
-            Comment comment = commentService.getCommentsByPoemId(poemId);
-            if (comment != null) {
-                return ResponseEntity.ok(comment);
-            } else {
-                return ResponseEntity.status(404).body("未找到该诗词的评论！");
-            }
+            commentService.toggleLike(poemId, commentId, isLike);
+            return ResponseEntity.ok("点赞操作成功！");
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("服务器内部错误：" + e.getMessage());
+            return ResponseEntity.status(500).body(e.getMessage());
         }
     }
 
+    // 获取按点赞排序的评论
+    @GetMapping("/{poemId}/sorted-comments")
+    public ResponseEntity<?> getSortedComments(@PathVariable("poemId") String poemId) {
+        try {
+            List<CommentNode> sortedComments = commentService.getSortedComments(poemId);
+            return ResponseEntity.ok(sortedComments);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
 }
