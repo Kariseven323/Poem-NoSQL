@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import java.util.Comparator;
 import java.util.Optional;
 
 @Service
@@ -76,6 +77,34 @@ public class CommentService {
     public Comment getCommentsByPoemId(String poemId) {
         Optional<Comment> optionalComment = commentRepository.findByPoemId(poemId);
         return optionalComment.orElse(null);
+    }
+
+    public boolean likeOrUnlikeComment(String poemId, String commentId, String userId) {
+        Optional<Comment> optionalComment = commentRepository.findByPoemId(poemId);
+        if (optionalComment.isPresent()) {
+            Comment comment = optionalComment.get();
+            for (CommentNode commentNode : comment.getComments()) {
+                if (commentNode.getId().equals(commentId)) {
+                    boolean liked = commentNode.likeOrUnlike(userId);
+                    commentRepository.save(comment);
+                    return liked;
+                }
+            }
+            throw new RuntimeException("评论ID不存在：" + commentId);
+        } else {
+            throw new RuntimeException("诗词不存在，无法点赞！");
+        }
+    }
+
+    public Comment getCommentsSortedByLikes(String poemId) {
+        Optional<Comment> optionalComment = commentRepository.findByPoemId(poemId);
+        if (optionalComment.isPresent()) {
+            Comment comment = optionalComment.get();
+            comment.getComments().sort(Comparator.comparingInt(CommentNode::getLikeCount).reversed());
+            return comment;
+        } else {
+            throw new RuntimeException("诗词不存在，无法获取评论！");
+        }
     }
 
 }

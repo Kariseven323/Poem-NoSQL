@@ -61,4 +61,30 @@ public class CommentController {
         }
     }
 
+    @PostMapping("/{poemId}/{commentId}/like")
+    public ResponseEntity<String> likeOrUnlikeComment(
+            @PathVariable("poemId") String poemId,
+            @PathVariable("commentId") String commentId,
+            @RequestParam("userId") String userId) {
+        try {
+            boolean liked = commentService.likeOrUnlikeComment(poemId, commentId, userId);
+            return ResponseEntity.ok(liked ? "点赞成功！" : "取消点赞成功！");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body("请求失败：" + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("服务器内部错误：" + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{poemId}/sorted-by-likes")
+    public ResponseEntity<?> getCommentsSortedByLikes(@PathVariable("poemId") String poemId) {
+        try {
+            Comment comment = commentService.getCommentsSortedByLikes(poemId);
+            return ResponseEntity.ok(comment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body("未找到该诗词的评论：" + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("服务器内部错误：" + e.getMessage());
+        }
+    }
 }

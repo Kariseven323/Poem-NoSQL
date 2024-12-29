@@ -2,9 +2,7 @@ package com.sspu.nscomment.entity;
 
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Data
 public class CommentNode {
@@ -12,6 +10,8 @@ public class CommentNode {
     private String userId;
     private String content;
     private List<CommentNode> replies = new ArrayList<>();
+    private int likeCount = 0; // 点赞数量
+    private Set<String> likedUserIds = new HashSet<>(); // 记录点赞用户ID
 
     public CommentNode(String userId, String content) {
         this.id = UUID.randomUUID().toString();
@@ -31,5 +31,17 @@ public class CommentNode {
             if (found) return true; // 递归中找到后直接返回
         }
         return false; // 未找到父评论
+    }
+
+    public boolean likeOrUnlike(String userId) {
+        if (likedUserIds.contains(userId)) {
+            likedUserIds.remove(userId);
+            likeCount--;
+            return false; // 取消点赞
+        } else {
+            likedUserIds.add(userId);
+            likeCount++;
+            return true; // 点赞
+        }
     }
 }
