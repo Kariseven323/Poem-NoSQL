@@ -8,28 +8,30 @@ import java.util.UUID;
 
 @Data
 public class CommentNode {
-    private String id;
-    private String userId;
-    private String content;
-    private List<CommentNode> replies = new ArrayList<>();
+    private String id; // 唯一标识
+    private String userId; // 用户ID
+    private String content; // 评论内容
+    private int likeCount = 0; // 点赞数
+    private List<CommentNode> replies = new ArrayList<>(); // 子评论
 
+    // 构造函数
     public CommentNode(String userId, String content) {
         this.id = UUID.randomUUID().toString();
         this.userId = userId;
         this.content = content;
     }
 
-    public boolean findAndAddReply(String parentId, CommentNode reply) {
-        for (CommentNode replyNode : replies) {
-            System.out.println("正在检查子评论节点ID：" + replyNode.getId());
-            if (replyNode.getId().equals(parentId)) {
-                System.out.println("找到父评论ID：" + parentId + "，添加嵌套回复：" + reply);
-                replyNode.getReplies().add(reply);
+    // 递归查找并对评论节点进行点赞或取消点赞
+    public boolean toggleLike(String targetId, boolean isLike) {
+        if (this.id.equals(targetId)) {
+            this.likeCount += isLike ? 1 : -1;
+            return true;
+        }
+        for (CommentNode reply : replies) {
+            if (reply.toggleLike(targetId, isLike)) {
                 return true;
             }
-            boolean found = replyNode.findAndAddReply(parentId, reply);
-            if (found) return true; // 递归中找到后直接返回
         }
-        return false; // 未找到父评论
+        return false;
     }
 }

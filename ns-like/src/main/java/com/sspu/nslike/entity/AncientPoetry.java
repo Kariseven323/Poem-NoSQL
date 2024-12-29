@@ -29,7 +29,7 @@ public class AncientPoetry {
     private String type;
 
     @Lob // 对应 MySQL 中的 TEXT
-    @Column(nullable = false)
+    @Column(nullable = false,columnDefinition = "TEXT")
     private String content;
 
     @Lob // 对应 MySQL 中的 TEXT
