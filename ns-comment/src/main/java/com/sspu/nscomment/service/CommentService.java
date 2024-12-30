@@ -8,11 +8,13 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class CommentService {
@@ -22,6 +24,11 @@ public class CommentService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private static final String COMMENT_CACHE_PREFIX = "comments:";
 
     // 添加评论
     public Comment addComment(String poemId, String userId, String content, String parentId) {
@@ -45,6 +52,8 @@ public class CommentService {
                     throw new RuntimeException("未找到父评论节点");
                 }
             }
+            // 更新 Redis 缓存
+            redisTemplate.opsForValue().set(COMMENT_CACHE_PREFIX + poemId, comment, 10, TimeUnit.MINUTES);
             return comment;
         } else {
             throw new RuntimeException("未找到目标诗词评论");
@@ -53,32 +62,50 @@ public class CommentService {
 
     // 点赞或取消点赞
     public void toggleLike(String poemId, String commentId, boolean isLike) {
-        Query query = new Query(Criteria.where("poemId").is(poemId));
-        Comment comment = mongoTemplate.findOne(query, Comment.class);
-        if (comment != null) {
-            boolean updated = comment.findAndToggleLike(commentId, isLike);
-            if (updated) {
-                mongoTemplate.save(comment); // 保存更新后的评论数据
-            } else {
-                throw new RuntimeException("未找到目标评论节点");
+        // 检查缓存中是否有数据
+        String cacheKey = COMMENT_CACHE_PREFIX + poemId;
+        Comment comment = (Comment) redisTemplate.opsForValue().get(cacheKey);
+
+        if (comment == null) {
+            // 缓存未命中，从数据库中查询
+            Query query = new Query(Criteria.where("poemId").is(poemId));
+            comment = mongoTemplate.findOne(query, Comment.class);
+            if (comment == null) {
+                throw new RuntimeException("未找到目标诗词评论");
             }
+        }
+
+        boolean updated = comment.findAndToggleLike(commentId, isLike);
+        if (updated) {
+            mongoTemplate.save(comment);
+            // 更新缓存
+            redisTemplate.opsForValue().set(cacheKey, comment, 10, TimeUnit.MINUTES);
         } else {
-            throw new RuntimeException("未找到目标诗词评论");
+            throw new RuntimeException("未找到目标评论节点");
         }
     }
 
     // 获取按点赞数排序的评论
     public List<CommentNode> getSortedComments(String poemId) {
-        Query query = new Query(Criteria.where("poemId").is(poemId));
-        Comment comment = mongoTemplate.findOne(query, Comment.class);
-        if (comment != null) {
-            List<CommentNode> allComments = new ArrayList<>();
-            flattenComments(comment.getComments(), allComments);
-            allComments.sort((c1, c2) -> Integer.compare(c2.getLikeCount(), c1.getLikeCount()));
-            return allComments;
-        } else {
-            throw new RuntimeException("未找到目标诗词评论");
+        // 检查缓存
+        String cacheKey = COMMENT_CACHE_PREFIX + poemId;
+        Comment comment = (Comment) redisTemplate.opsForValue().get(cacheKey);
+
+        if (comment == null) {
+            // 缓存未命中，从数据库中查询
+            Query query = new Query(Criteria.where("poemId").is(poemId));
+            comment = mongoTemplate.findOne(query, Comment.class);
+            if (comment == null) {
+                throw new RuntimeException("未找到目标诗词评论");
+            }
+            // 缓存结果
+            redisTemplate.opsForValue().set(cacheKey, comment, 10, TimeUnit.MINUTES);
         }
+
+        List<CommentNode> allComments = new ArrayList<>();
+        flattenComments(comment.getComments(), allComments);
+        allComments.sort((c1, c2) -> Integer.compare(c2.getLikeCount(), c1.getLikeCount()));
+        return allComments;
     }
 
     // 展开评论的层级结构

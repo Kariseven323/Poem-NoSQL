@@ -1,5 +1,7 @@
 package com.sspu.nscomment.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -14,8 +16,14 @@ public class CommentNode {
     private int likeCount = 0; // 点赞数
     private List<CommentNode> replies = new ArrayList<>(); // 子评论
 
-    // 构造函数
-    public CommentNode(String userId, String content) {
+    // 默认无参构造函数（Jackson 反序列化需要）
+    public CommentNode() {}
+
+    // 参数化构造函数
+    @JsonCreator
+    public CommentNode(
+            @JsonProperty("userId") String userId,
+            @JsonProperty("content") String content) {
         this.id = UUID.randomUUID().toString();
         this.userId = userId;
         this.content = content;
