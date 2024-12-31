@@ -1,91 +1,87 @@
 <template>
   <div class="home">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-state">
-      正在加载诗词数据...
-    </div>
-
-    <!-- 错误提示 -->
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-
-    <!-- 诗词列表 -->
-    <div v-if="!loading && !error" class="poems-container">
-      <div v-for="poem in currentPagePoems" :key="poem.id" class="poem-card">
-        <div class="poem-content">
-          <h2 class="poem-title">{{ poem.title }}</h2>
-          <p class="poem-author">{{ poem.author }}</p>
-          <p class="poem-text">{{ poem.content }}</p>
-          <div class="poem-actions">
-            <span @click="toggleLike(poem)" class="action-btn" :class="{ 'liked': isLiked(poem) }">
-              <i class="el-icon-star-off"></i>
+    <div class="poem-container">
+      <div v-if="loading" class="loading">
+        加载中...
+      </div>
+      <div v-else-if="error" class="error">
+        {{ error }}
+      </div>
+      <div v-else class="poems-grid">
+        <div v-for="poem in currentPagePoems" :key="poem.id" class="poem-card">
+          <div class="poem-header">
+            <h2 class="title">{{ poem.title }}</h2>
+            <p class="dynasty">[{{ poem.dynasty }}]</p>
+            <p class="author">{{ poem.writer }}</p>
+          </div>
+          <div class="content-vertical">
+            <p v-for="(line, index) in getPoemLines(poem.content)" :key="index" class="line">{{ line }}</p>
+          </div>
+          <div class="poem-footer">
+            <div class="like-button" 
+                 :class="{ 'liked': isLiked(poem.id) }"
+                 @click="handleLike(poem)">
+              <i class="el-icon-star-on"></i>
               点赞 {{ poem.likeCount || 0 }}
-            </span>
-            <span @click="openCommentDialog(poem)" class="action-btn">
+            </div>
+            <div class="comment-button" @click="openCommentDialog(poem)">
               <i class="el-icon-chat-dot-round"></i>
               评论
-            </span>
+            </div>
           </div>
+        </div>
+        
+        <div class="pagination">
+          <button @click="previousPage" :disabled="currentPage <= 1" class="nav-button">
+            上一页
+          </button>
+          <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+          <button @click="nextPage" :disabled="currentPage >= totalPages" class="nav-button">
+            下一页
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- ��论弹窗 -->
+    <!-- 评论对话框 -->
     <el-dialog
-      v-model="commentDialogVisible"
-      :title="currentPoem ? currentPoem.title + ' - 评论' : '评论'"
+      v-model="showCommentDialog"
+      title="评论"
       width="50%"
-      :before-close="handleCloseDialog"
+      :close-on-click-modal="false"
+      destroy-on-close
     >
       <div class="comment-dialog-content">
+        <!-- 评论列表 -->
+        <div class="comments-list" v-loading="commentLoading">
+          <div v-if="comments.length === 0" class="no-comments">
+            暂无评论
+          </div>
+          <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
+            <div class="comment-header">
+              <span class="comment-user">用户{{ comment.userId }}</span>
+              <span class="comment-time">{{ new Date(comment.createTime).toLocaleString() }}</span>
+            </div>
+            <div class="comment-content">{{ comment.content }}</div>
+          </div>
+        </div>
+
         <!-- 评论输入框 -->
         <div class="comment-input">
           <el-input
-            v-model="newComment"
+            v-model="commentContent"
             type="textarea"
             :rows="3"
-            placeholder="写下你的评论..."
+            placeholder="请输入您的评论..."
+            maxlength="200"
+            show-word-limit
           />
-          <el-button type="primary" @click="submitComment" :disabled="!newComment.trim()">
+          <el-button type="primary" @click="submitComment" class="submit-btn">
             发表评论
           </el-button>
         </div>
-
-        <!-- 评论列表 -->
-        <div class="comments-list">
-          <div v-if="comments.length === 0" class="no-comments">
-            暂无评论，快来发表第一条评论吧！
-          </div>
-          <div v-else v-for="comment in comments" :key="comment.id" class="comment-item">
-            <div class="comment-header">
-              <span class="comment-user">{{ comment.userId }}</span>
-              <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
-            </div>
-            <div class="comment-content">{{ comment.content }}</div>
-            <div class="comment-footer">
-              <span @click="toggleCommentLike(comment)" 
-                    class="comment-like" 
-                    :class="{ 'liked': comment.likedUserIds?.includes(currentUserId) }">
-                <i class="el-icon-star-off"></i>
-                {{ comment.likeCount || 0 }}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
     </el-dialog>
-
-    <!-- 分页器 -->
-    <div v-if="!loading && !error && poems.length > 0" class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="poemsPerPage"
-        :total="totalPoems"
-        layout="prev, pager, next"
-        @current-change="handlePageChange"
-      />
-    </div>
   </div>
 </template>
 
@@ -134,6 +130,28 @@ api.interceptors.response.use(
   }
 );
 
+// 创建axios实例并设置基础配置
+const likeApi = axios.create({
+  baseURL: 'http://localhost:8081/api/likes',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: true
+});
+
+// 创建评论API实例
+const commentApi = axios.create({
+  baseURL: 'http://localhost:8084/api/comments',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: true
+});
+
 export default {
   name: 'Home',
   components: {
@@ -142,23 +160,43 @@ export default {
   data() {
     return {
       poems: [],
-      userId: 'user1',
-      currentPage: 1,
-      poemsPerPage: 10,
-      totalPoems: 0,
       loading: false,
       error: null,
-      currentUserId: 'user123',
-      commentDialogVisible: false,
-      currentPoem: null,
-      newComment: '',
-      comments: []
+      currentPage: 1,
+      poemsPerPage: 10,
+      likedPoems: new Set(),
+      userId: localStorage.getItem('userId') || '1',
+      recommendApi: axios.create({
+        baseURL: 'http://localhost:8085/api/recommend',
+        timeout: 5000
+      }),
+      // 添加评论相关的数据
+      showCommentDialog: false,
+      currentPoemId: null,
+      commentContent: '',
+      comments: [],
+      commentLoading: false
     };
   },
-  async created() {
-    await this.fetchPoems();
+  watch: {
+    poems: {
+      immediate: true,
+      handler(newPoems) {
+        if (newPoems && newPoems.length > 0) {
+          this.currentPoem = newPoems[this.currentIndex];
+        }
+      }
+    },
+    currentIndex(newIndex) {
+      if (this.poems && this.poems.length > 0) {
+        this.currentPoem = this.poems[newIndex];
+      }
+    }
   },
   computed: {
+    totalPages() {
+      return Math.ceil(this.poems.length / this.poemsPerPage);
+    },
     currentPagePoems() {
       const startIndex = (this.currentPage - 1) * this.poemsPerPage;
       return this.poems.slice(startIndex, startIndex + this.poemsPerPage);
@@ -169,234 +207,167 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        // 先刷新Redis缓存
-        const refreshResponse = await fetch('http://localhost:8083/rank/refresh', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include'
-        });
-        
-        if (!refreshResponse.ok) {
-          console.warn('刷新缓存失败，尝试直接获取数据');
-        }
-        
-        // 获取诗词数据
-        const response = await fetch('http://localhost:8083/rank/top', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include'
-        });
+        // 尝试不同的推荐接口
+        const apis = [
+          { method: 'hot', name: '热门诗词' },
+          { method: 'daily', name: '每日推荐' }
+        ];
 
-        if (!response.ok) {
-          throw new Error('获取诗词数据失败: ' + response.statusText);
-        }
-        
-        const data = await response.json();
-        console.log('获取到的原始数据:', data);
-        
-        if (!data || Object.keys(data).length === 0) {
-          throw new Error('没有获取到诗词数据');
-        }
-        
-        // 转换数据格式
-        this.poems = Object.values(data).map(poem => ({
-          id: poem.id,
-          title: poem.title,
-          author: poem.writer || poem.author,
-          content: poem.content,
-          visitCount: poem.visitCount || 0,
-          likeCount: poem.likeCount || 0,
-          comment: {
-            id: poem.id,
-            content: poem.shangxi || '暂无赏析',
-            likeCount: 0,
-            likedUserIds: [],
-            replies: []
+        for (const api of apis) {
+          try {
+            const response = await this.recommendApi.get(`/${api.method}`);
+            if (response.data && response.data.length > 0) {
+              this.poems = response.data;
+              this.currentIndex = 0;
+              this.currentPoem = this.poems[0];
+              console.log(`成功获取${api.name}数据`);
+              break;
+            }
+          } catch (err) {
+            console.warn(`获取${api.name}失败:`, err);
           }
-        }));
-        
-        this.totalPoems = this.poems.length;
-        console.log('处理后的诗词数据:', this.poems);
+        }
+
+        if (this.poems.length === 0) {
+          this.error = '暂无诗词数据';
+        }
       } catch (error) {
         console.error('获取诗词数据失败:', error);
-        this.error = error.message || '获取数据失败，请稍后重试';
+        this.error = '获取诗词数据失败，请稍后重试';
       } finally {
         this.loading = false;
       }
     },
-    handlePageChange(newPage) {
-      this.currentPage = newPage;
-      window.scrollTo(0, 0);
-    },
-    async toggleLike(poem) {
-      try {
-        const response = await api.post(`/api/likes/poems/${poem.id}/toggle-like`, null, {
-          params: { userId: this.currentUserId }
-        });
-        
-        if (response.data) {
-          poem.likeCount = response.data.likeCount;
-          poem.likedUserIds = response.data.likedUserIds;
-          ElMessage.success(poem.likedUserIds.includes(this.currentUserId) ? '点赞成功' : '取消点赞');
-        }
-      } catch (error) {
-        console.error('点赞失败:', error);
-        let errorMessage = '点赞操作失败，请稍后重试';
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-        ElMessage({
-          message: errorMessage,
-          type: 'error',
-          duration: 3000
-        });
+    previousPoem() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--;
       }
     },
-    async addComment(poem, content) {
-      if (!content.trim()) {
-        this.$message.warning('评论内容不能为空');
+    nextPoem() {
+      if (this.currentIndex < this.poems.length - 1) {
+        this.currentIndex++;
+      }
+    },
+    async handleLike(poem) {
+      if (!this.userId) {
+        ElMessage.error('请先登录后再点赞');
         return;
       }
-
+      
       try {
-        const comment = {
-          poemId: poem.id,
-          userId: this.currentUserId,
-          content: content.trim(),
-          parentId: null // 顶级评论
-        };
-
-        const response = await api.post('/api/likes/comments', comment);
-        const savedComment = response.data;
+        const response = await likeApi.post(`/${poem.id}/toggle?userId=${this.userId}`);
         
-        // 更新评论列表
-        if (!poem.comment.replies) {
-          poem.comment.replies = [];
+        if (response.status === 200) {
+          // 更新点赞状态和数量
+          if (this.likedPoems.has(poem.id)) {
+            this.likedPoems.delete(poem.id);
+            poem.likeCount = (poem.likeCount || 1) - 1;
+          } else {
+            this.likedPoems.add(poem.id);
+            poem.likeCount = (poem.likeCount || 0) + 1;
+          }
+          ElMessage.success(this.likedPoems.has(poem.id) ? '点赞成功' : '取消点赞成功');
         }
-        poem.comment.replies.unshift(savedComment);
-        
-        this.$message.success('评论发表成功');
-        return savedComment;
       } catch (error) {
-        console.error('发表评论失败:', error);
-        this.$message.error('发表评论失败，请稍后重试');
-        throw error;
+        console.error('点赞操作失败:', error);
+        if (error.response?.status === 401) {
+          ElMessage.error('请先登录后再点赞');
+        } else if (error.response?.status === 400) {
+          ElMessage.error(error.response.data || '请求参数错误');
+        } else {
+          ElMessage.error('点赞失败，请稍后重试');
+        }
       }
     },
-    async loadComments(poem) {
+    getPoemLines(content) {
+      if (!content) return [];
+      
+      // 1. 先移除括号内的内容
+      const contentWithoutBrackets = content.replace(/[（(].*?[）)]/g, '');
+      
+      // 2. 按句号分割，保留句号
+      return contentWithoutBrackets
+        .split(/([。])/g)
+        .reduce((acc, cur, i, arr) => {
+          if (i % 2 === 0) {
+            const line = cur + (arr[i + 1] || '');
+            if (line.trim()) {
+              acc.push(line);
+            }
+          }
+          return acc;
+        }, [])
+        .filter(line => line.trim());
+    },
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        window.scrollTo(0, 0);
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        window.scrollTo(0, 0);
+      }
+    },
+    // 检查诗词是否已点赞
+    isLiked(poemId) {
+      return this.likedPoems.has(poemId);
+    },
+    // 打开评论对话框
+    async openCommentDialog(poem) {
+      this.currentPoemId = poem.id;
+      this.showCommentDialog = true;
+      this.commentContent = '';
+      await this.loadComments(poem.id);
+    },
+    // 加载评论列表
+    async loadComments(poemId) {
+      this.commentLoading = true;
       try {
-        const response = await api.get(`/api/likes/poems/${poem.id}/comments`);
-        if (response.data) {
+        const response = await commentApi.get(`/${poemId}/sorted-comments`);
+        if (response.data && Array.isArray(response.data)) {
           this.comments = response.data;
+          console.log('获取到的评论数据:', response.data);
         } else {
           this.comments = [];
+          console.log('评论数据格式不正确:', response.data);
         }
       } catch (error) {
-        console.error('加载评论失败:', error);
-        let errorMessage = '加载评论失败，请稍后重试';
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-        ElMessage({
-          message: errorMessage,
-          type: 'error'
-        });
+        console.error('获取评论失败:', error);
+        ElMessage.error('获取评论失败，请稍后重试');
         this.comments = [];
+      } finally {
+        this.commentLoading = false;
       }
     },
-    async toggleCommentLike(comment) {
-      try {
-        const response = await api.post(`/api/likes/comments/${comment.id}/toggle-like`, null, {
-          params: { userId: this.currentUserId }
-        });
-        
-        if (response.data) {
-          comment.likeCount = response.data.likeCount;
-          comment.likedUserIds = response.data.likedUserIds;
-          ElMessage.success(comment.likedUserIds.includes(this.currentUserId) ? '点赞成功' : '取消点赞');
-        }
-      } catch (error) {
-        console.error('评论点赞失败:', error);
-        let errorMessage = '点赞操作失败，请稍后重试';
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-        ElMessage({
-          message: errorMessage,
-          type: 'error',
-          duration: 3000
-        });
-      }
-    },
-    isLiked(poem) {
-      return poem.likedUserIds?.includes(this.currentUserId);
-    },
-    showComments(poem) {
-      poem.showComments = !poem.showComments;
-      if (poem.showComments && (!poem.comment.replies || poem.comment.replies.length === 0)) {
-        this.loadComments(poem);
-      }
-    },
-    updateComment(updatedComment) {
-      const poem = this.poems.find(p => p.comment.id === updatedComment.id);
-      if (poem) {
-        poem.comment = updatedComment;
-      }
-    },
-    openCommentDialog(poem) {
-      this.currentPoem = poem;
-      this.commentDialogVisible = true;
-      this.newComment = '';
-      this.loadComments(poem);
-    },
-    handleCloseDialog() {
-      this.commentDialogVisible = false;
-      this.currentPoem = null;
-      this.comments = [];
-      this.newComment = '';
-    },
+    // 提交评论
     async submitComment() {
-      if (!this.newComment.trim()) {
-        ElMessage.warning('评论内容不能为空');
+      if (!this.commentContent.trim()) {
+        ElMessage.warning('请输入评论内容');
         return;
       }
 
       try {
-        const comment = {
-          poemId: this.currentPoem.id,
-          userId: this.currentUserId,
-          content: this.newComment.trim(),
-          parentId: null
-        };
-
-        const response = await api.post('/api/likes/comments', comment);
-        if (response.data) {
-          this.comments.unshift(response.data);
-          this.newComment = '';
-          ElMessage.success('评论发表成功');
-        }
-      } catch (error) {
-        console.error('发表评论失败:', error);
-        let errorMessage = '发表评论失败，请稍后重试';
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-        ElMessage({
-          message: errorMessage,
-          type: 'error'
+        await commentApi.post(`/${this.currentPoemId}/add`, null, {
+          params: {
+            userId: this.userId,
+            content: this.commentContent.trim()
+          }
         });
+
+        ElMessage.success('评论成功');
+        this.commentContent = '';
+        await this.loadComments(this.currentPoemId);
+      } catch (error) {
+        console.error('提交评论失败:', error);
+        ElMessage.error('提交评论失败，请稍后重试');
       }
-    },
-    formatTime(time) {
-      if (!time) return '';
-      return new Date(time).toLocaleString();
     }
+  },
+  created() {
+    this.fetchPoems();
   }
 };
 </script>
@@ -405,6 +376,7 @@ export default {
 .home {
   min-height: 100vh;
   width: 100%;
+  padding: 20px;
   position: relative;
   background: none;
 }
@@ -430,163 +402,196 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.6);
   z-index: 1;
 }
 
-.poems-container {
+.poem-container {
   position: relative;
   z-index: 2;
   max-width: 800px;
   margin: 0 auto;
+}
+
+.loading, .error {
+  text-align: center;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
+  font-size: 18px;
+}
+
+.error {
+  color: #ff4444;
+}
+
+.poems-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .poem-card {
-  padding: 40px 20px;
+  background: none;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   border: none;
-  position: relative;
-  background: none;
-  margin-bottom: 20px;
+  border-radius: 0;
+  backdrop-filter: none;
 }
 
-.poem-content {
+.poem-header {
   text-align: center;
-  background: none;
+  margin-bottom: 15px;
+  width: 100%;
 }
 
-.poem-title {
-  font-size: 28px;
-  color: #000;
-  margin-bottom: 18px;
-  font-weight: 500;
-  letter-spacing: 4px;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 1.0);
+.title {
+  font-size: 22px;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: normal;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-.poem-author {
-  color: #222;
-  font-size: 20px;
-  margin-bottom: 25px;
+.dynasty {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.author {
+  font-size: 16px;
+  color: #444;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.content-vertical {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.line {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  margin: 4px 0;
+  text-align: center;
   letter-spacing: 2px;
   text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-.poem-text {
-  font-size: 20px;
-  line-height: 2;
-  color: #000;
-  margin-bottom: 30px;
-  white-space: pre-wrap;
-  letter-spacing: 3px;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
-}
-
-.poem-meta {
-  display: flex;
-  justify-content: center;
-  color: #444;
-  font-size: 16px;
-  gap: 30px;
-  margin-bottom: 0;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
-}
-
-.loading-state, .error-message {
-  text-align: center;
-  padding: 20px;
-  color: #666;
-  position: relative;
-  z-index: 2;
-  background: none;
-}
-
 .pagination {
-  position: relative;
-  z-index: 2;
+  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
-  margin-top: 30px;
-  padding: 20px 0;
-  background: none;
-}
-
-:deep(.el-pagination .btn-prev),
-:deep(.el-pagination .btn-next),
-:deep(.el-pagination .el-pager li) {
-  background: none;
-  border: none;
-  color: #333;
-}
-
-.like-btn, .comment-btn {
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.like-btn:hover, .comment-btn:hover {
-  color: #1890ff;
-}
-
-.like-btn.liked {
-  color: #1890ff;
-}
-
-.poem-meta span {
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.poem-meta span:hover {
-  color: #1890ff;
-}
-
-.poem-actions {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
+  align-items: center;
+  gap: 20px;
   margin-top: 20px;
 }
 
-.action-btn {
+.like-button {
+  padding: 6px 16px;
+  background-color: transparent;
+  border: 1px solid #666;
+  border-radius: 16px;
+  color: #666;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+}
+
+.like-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #ff4444;
+}
+
+.like-button.liked {
+  color: #ff4444;
+  border-color: #ff4444;
+}
+
+.like-button i {
+  font-size: 16px;
+}
+
+.nav-button {
+  background: transparent;
+  border: 1px solid #666;
   cursor: pointer;
   color: #666;
-  transition: all 0.3s;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
-.action-btn:hover {
-  color: #1890ff;
+.nav-button:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.action-btn.liked {
-  color: #1890ff;
+.page-info {
+  color: #666;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.poem-footer {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.comment-button {
+  padding: 6px 16px;
+  background-color: transparent;
+  border: 1px solid #666;
+  border-radius: 16px;
+  color: #666;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.comment-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #409EFF;
+  border-color: #409EFF;
+}
+
+.comment-button i {
+  font-size: 16px;
 }
 
 .comment-dialog-content {
-  padding: 20px 0;
-}
-
-.comment-input {
-  margin-bottom: 20px;
-}
-
-.comment-input .el-button {
-  margin-top: 10px;
-  float: right;
+  padding: 20px;
 }
 
 .comments-list {
-  margin-top: 30px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.no-comments {
+  text-align: center;
+  color: #999;
+  padding: 20px;
 }
 
 .comment-item {
-  padding: 15px 0;
+  padding: 15px;
   border-bottom: 1px solid #eee;
 }
 
@@ -597,8 +602,8 @@ export default {
 }
 
 .comment-user {
-  font-weight: 500;
-  color: #333;
+  font-weight: bold;
+  color: #409EFF;
 }
 
 .comment-time {
@@ -607,30 +612,16 @@ export default {
 }
 
 .comment-content {
-  color: #666;
-  line-height: 1.6;
+  color: #333;
+  line-height: 1.5;
 }
 
-.comment-footer {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
+.comment-input {
+  margin-top: 20px;
 }
 
-.comment-like {
-  cursor: pointer;
-  color: #666;
-  transition: all 0.3s;
-}
-
-.comment-like:hover,
-.comment-like.liked {
-  color: #1890ff;
-}
-
-.no-comments {
-  text-align: center;
-  color: #999;
-  padding: 20px 0;
+.submit-btn {
+  margin-top: 10px;
+  float: right;
 }
 </style>
