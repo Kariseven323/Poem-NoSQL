@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/likes")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class PoemController {
 
     @Autowired
