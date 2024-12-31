@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,6 +30,12 @@ public class CommentService {
     private RedisTemplate<String, Object> redisTemplate;
 
     private static final String COMMENT_CACHE_PREFIX = "comments:";
+
+    // 异步更新 Redis 缓存
+    @Async("taskExecutor")
+    public void updateRedisCache(String poemId, Comment comment) {
+        redisTemplate.opsForValue().set(COMMENT_CACHE_PREFIX + poemId, comment, 10, TimeUnit.MINUTES);
+    }
 
     // 添加评论
     public Comment addComment(String poemId, String userId, String content, String parentId) {
@@ -52,8 +59,10 @@ public class CommentService {
                     throw new RuntimeException("未找到父评论节点");
                 }
             }
-            // 更新 Redis 缓存
-            redisTemplate.opsForValue().set(COMMENT_CACHE_PREFIX + poemId, comment, 10, TimeUnit.MINUTES);
+
+            // 异步更新 Redis 缓存
+            updateRedisCache(poemId, comment);
+
             return comment;
         } else {
             throw new RuntimeException("未找到目标诗词评论");

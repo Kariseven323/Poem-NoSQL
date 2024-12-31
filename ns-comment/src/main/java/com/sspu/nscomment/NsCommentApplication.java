@@ -5,11 +5,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableJpaRepositories(basePackages = "com.sspu.nslike.repository") // 指定 JPA 仓库的包
 @EntityScan(basePackages = "com.sspu.nslike.entity") // 指定 JPA 实体的包
+@EnableAsync
 public class NsCommentApplication {
     public static void main(String[] args) {
         SpringApplication.run(NsCommentApplication.class, args);
