@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableJpaRepositories(basePackages = "com.sspu.nssearch.repository.jpa") // JPA 仓库路径
 @EnableMongoRepositories(basePackages = "com.sspu.nssearch.repository.mongo") // MongoDB 仓库路径
 @EnableElasticsearchRepositories(basePackages = "com.sspu.nssearch.repository.elasticsearch") // Elasticsearch 仓库路径
-@EntityScan(basePackages = "com.sspu.nslike.entity") // 扫描实体类
+@EntityScan(basePackages = "com.sspu.nssearch.entity") // 扫描实体类
 public class NsSearchApplication {
     public static void main(String[] args) {
         SpringApplication.run(NsSearchApplication.class, args);

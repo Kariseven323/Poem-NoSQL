@@ -1,4 +1,4 @@
-package com.sspu.nslike.entity;
+package com.sspu.nssearch.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -9,13 +9,16 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Entity
 @Table(name = "ancient_poetry") // 对应 MySQL 表
 @Data
+@Document(indexName = "ancientpoetry") // 对应 Elasticsearch 索引（必须小写）
 public class AncientPoetry {
 
     @Id
     @Column(length = 50, nullable = false) // MySQL 中的主键
+    @org.springframework.data.annotation.Id // Elasticsearch 的主键
     private String id;
 
     @Column(length = 255, nullable = false) // MySQL 的标题字段
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart") // Elasticsearch 的全文索引
     private String title;
 
     @Column(length = 50) // MySQL 的朝代字段

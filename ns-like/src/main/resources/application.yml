@@ -17,6 +17,8 @@ spring:
     show-sql: true
   application:
     name: ns-like
+  main:
+    allow-bean-definition-overriding: false
 
 server:
   port: 8083
@@ -32,3 +34,4 @@ logging:
     org.springframework.data.mongodb: DEBUG
     org.hibernate.SQL: DEBUG
     com.netflix.discovery: DEBUG
+

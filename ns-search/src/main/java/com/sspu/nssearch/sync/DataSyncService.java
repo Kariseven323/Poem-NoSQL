@@ -1,7 +1,7 @@
 package com.sspu.nssearch.sync;
 
-import com.sspu.nslike.entity.AncientPoetry;
-import com.sspu.nssearch.repository.elasticsearch.PoetrySearchRepository;
+import com.sspu.nssearch.entity.AncientPoetry;
+import com.sspu.nssearch.repository.elasticsearch.AncientPoetrySearchRepository;
 import com.sspu.nssearch.repository.jpa.PoetryJpaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ public class DataSyncService {
     private PoetryJpaRepository poetryJpaRepository;
 
     @Autowired
-    private PoetrySearchRepository poetrySearchRepository;
+    private AncientPoetrySearchRepository poetrySearchRepository;
 
     @PostConstruct
     public void syncDataToElasticsearch() {
