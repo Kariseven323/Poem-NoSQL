@@ -1,12 +1,9 @@
 package com.sspu.nsrank.controller;
 
-import com.sspu.nslike.entity.AncientPoetry;
+import com.sspu.nsrank.entity.RankedPoetry;
 import com.sspu.nsrank.service.RankService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,9 +14,17 @@ public class RankController {
     @Autowired
     private RankService rankService;
 
-    // 获取前 100 的诗词
+    // 获取诗词前100排名
     @GetMapping("/top100")
-    public ResponseEntity<List<AncientPoetry>> getTop100() {
-        return ResponseEntity.ok(rankService.getTop100Poems());
+    public List<RankedPoetry> getTop100RankedPoems() {
+        return rankService.getTop100RankedPoems();
+    }
+
+    // 更新诗词分数（管理员或内部调用）
+    @PostMapping("/update/{poemId}")
+    public void updatePoemScore(
+            @PathVariable String poemId,
+            @RequestParam double score) {
+        rankService.updatePoemScore(poemId, score);
     }
 }

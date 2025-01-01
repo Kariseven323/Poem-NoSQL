@@ -99,4 +99,22 @@ public class PoemService {
     public void saveToDatabaseAsync(PoemLike poemLike) {
         poemLikeRepository.save(poemLike);
     }
+
+    // 根据诗词id获取点赞数量
+    public int getLikeCountByPoemId(String poemId) {
+        String cacheKey = CACHE_PREFIX + poemId;
+        PoemLike poemLike;
+        // 先从 Redis 中获取数据
+        poemLike = (PoemLike) redisTemplate.opsForValue().get(cacheKey);
+        if (poemLike == null) {
+            // 如果 Redis 中没有，查询 MongoDB 并缓存
+            Optional<PoemLike> optionalPoemLike = poemLikeRepository.findByPoemId(poemId);
+            if (optionalPoemLike.isEmpty()) {
+                return 0; // 诗词不存在，返回0
+            }
+            poemLike = optionalPoemLike.get();
+            redisTemplate.opsForValue().set(cacheKey, poemLike, 10, TimeUnit.MINUTES); // 缓存10分钟
+        }
+        return poemLike.getLikeCount();
+    }
 }
