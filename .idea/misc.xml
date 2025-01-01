@@ -11,7 +11,6 @@
     </option>
     <option name="ignoredFiles">
       <set>
-        <option value="$PROJECT_DIR$/ns-rank/pom.xml" />
         <option value="$PROJECT_DIR$/ns-users/pom.xml" />
       </set>
     </option>

@@ -40,4 +40,11 @@ public class PoemController {
             return ResponseEntity.status(500).body("服务器内部错误：" + e.getMessage());
         }
     }
+
+    // 根据诗词id获取点赞数量
+    @GetMapping("/{poemId}/likeCount")
+    public ResponseEntity<Integer> getLikeCountByPoemId(@PathVariable("poemId") String poemId) {
+        int likeCount = poemService.getLikeCountByPoemId(poemId);
+        return ResponseEntity.ok(likeCount);
+    }
 }
