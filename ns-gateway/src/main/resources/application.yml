@@ -23,7 +23,9 @@ spring:
         - id: ns-user
           uri: lb://ns-user
           predicates:
-            - Path=/users/**
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
 
         # 路由到 ns-comment 服务
         - id: ns-comment
@@ -37,6 +39,11 @@ spring:
           predicates:
             - Path=/api/recommend/**
 
+        - id: ns-search
+          uri: lb://ns-search
+          predicates:
+            - Path=/api/search/**
+
     discovery:
       locator:
         enabled: true # 开启服务发现
@@ -47,3 +54,8 @@ eureka:
       defaultZone: http://localhost:8080/eureka/ # Eureka 服务注册地址
   instance:
     prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG

@@ -15,6 +15,7 @@
         <module>ns-like</module>
         <module>ns-comment</module>
         <module>ns-rank</module>
+        <module>ns-search</module>
     </modules>
 
     <properties>
