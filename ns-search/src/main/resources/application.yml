@@ -1,0 +1,27 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: ns-search
+  datasource:
+    url: jdbc:mysql://localhost:3306/poem
+    username: root
+    password: cdj123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/poem
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 5000ms
+  elasticsearch:
+    rest:
+      uris:
+        - http://localhost:9200
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8080/eureka/
