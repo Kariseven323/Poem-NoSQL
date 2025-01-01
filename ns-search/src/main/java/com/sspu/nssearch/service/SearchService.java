@@ -2,8 +2,8 @@ package com.sspu.nssearch.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sspu.nslike.entity.AncientPoetry;
-import com.sspu.nssearch.repository.elasticsearch.PoetrySearchRepository;
+import com.sspu.nssearch.entity.AncientPoetry;
+import com.sspu.nssearch.repository.elasticsearch.AncientPoetrySearchRepository;
 import com.sspu.nssearch.repository.jpa.PoetryJpaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +27,7 @@ public class SearchService {
     private PoetryJpaRepository poetryJpaRepository;
 
     @Autowired
-    private PoetrySearchRepository poetrySearchRepository;
+    private AncientPoetrySearchRepository poetrySearchRepository;
 
     @Autowired
     private ObjectMapper objectMapper;

@@ -1,6 +1,6 @@
 package com.sspu.nssearch.controller;
 
-import com.sspu.nslike.entity.AncientPoetry;
+import com.sspu.nssearch.entity.AncientPoetry;
 import com.sspu.nssearch.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

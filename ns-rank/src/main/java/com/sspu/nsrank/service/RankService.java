@@ -1,6 +1,6 @@
 package com.sspu.nsrank.service;
 
-import com.sspu.nslike.repository.AncientPoetryRepository;
+import com.sspu.nsrank.repository.AncientPoetryRepository;
 import com.sspu.nsrank.entity.RankedPoetry;
 import com.sspu.nsrank.repository.RankRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.data.redis.core.ZSetOperations;
-import com.sspu.nslike.entity.*;
+import com.sspu.nsrank.entity.*;
 import com.sspu.nslike.entity.PoemLike;
-import com.sspu.nslike.repository.PoemLikeRepository;
+import com.sspu.nsrank.repository.PoemLikeRepository;
 
 import java.util.*;
 import java.util.stream.Collectors;

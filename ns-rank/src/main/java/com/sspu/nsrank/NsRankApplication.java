@@ -10,8 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling
-@ComponentScan(basePackages = {"com.sspu.nsrank", "com.sspu.nslike"})
-@EnableJpaRepositories(basePackages = "com.sspu.nslike.repository") // 扫描 Repository 包
+@EnableJpaRepositories(basePackages = "com.sspu.nsrank.repository") // 扫描 Repository 包
 public class NsRankApplication {
     public static void main(String[] args) {
         SpringApplication.run(NsRankApplication.class, args);

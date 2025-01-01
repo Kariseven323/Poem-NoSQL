@@ -1,6 +1,6 @@
 package com.sspu.nssearch.repository.jpa;
 
-import com.sspu.nslike.entity.AncientPoetry;
+import com.sspu.nssearch.entity.AncientPoetry;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
