@@ -11,7 +11,7 @@ spring:
         - id: ns-rank
           uri: lb://ns-rank
           predicates:
-            - Path=/rank/**
+            - Path=/api/rank/**
 
         # 路由到 ns-like 服务
         - id: ns-like

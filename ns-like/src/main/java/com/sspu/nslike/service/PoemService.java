@@ -4,6 +4,7 @@ import com.sspu.nslike.entity.PoemLike;
 import com.sspu.nslike.repository.AncientPoetryRepository;
 import com.sspu.nslike.repository.PoemLikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class PoemService {
     private PoemLikeRepository poemLikeRepository;
 
     @Autowired
+    @Qualifier("likeRedisConfig")
     private RedisTemplate<String, Object> redisTemplate;
 
     private static final String CACHE_PREFIX = "poem:likes:";

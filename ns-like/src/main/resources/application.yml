@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/poem
     username: root
-    password: zsh123
+    password: cdj123
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     mongodb:

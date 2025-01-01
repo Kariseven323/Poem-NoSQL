@@ -38,6 +38,7 @@ public class CommentService {
     }
 
     // 添加评论
+    // 修改addComment方法，支持递归更新MongoDB子文档
     public Comment addComment(String poemId, String userId, String content, String parentId) {
         Optional<Comment> optionalComment = commentRepository.findByPoemId(poemId);
 
@@ -51,16 +52,20 @@ public class CommentService {
                 Update update = new Update().push("comments", newComment);
                 mongoTemplate.updateFirst(query, update, Comment.class);
             } else {
-                // 添加回复
+                // 添加嵌套评论
                 boolean added = comment.findAndAddReply(parentId, newComment);
                 if (added) {
-                    mongoTemplate.save(comment);
+                    // 只更新指定节点
+                    Query query = new Query(Criteria.where("poemId").is(poemId)
+                            .and("comments.id").is(parentId));
+                    Update update = new Update().push("comments.$.replies", newComment);
+                    mongoTemplate.updateFirst(query, update, Comment.class);
                 } else {
                     throw new RuntimeException("未找到父评论节点");
                 }
             }
 
-            // 异步更新 Redis 缓存
+            // 更新 Redis 缓存
             updateRedisCache(poemId, comment);
 
             return comment;
